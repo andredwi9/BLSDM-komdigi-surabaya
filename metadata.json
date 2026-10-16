@@ -1,0 +1,6 @@
+{
+  "name": "SIMLAB SMART - Sistem Informasi Manajemen Laboratorium BPSDM Komdigi",
+  "description": "Sistem Informasi Manajemen Laboratorium Terintegrasi untuk Balai Pelatihan Sumber Daya Manusia Kementerian Komunikasi dan Digital RI dengan conflict detection, QR check-in, maintenance ticketing, dan AI predictive analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
