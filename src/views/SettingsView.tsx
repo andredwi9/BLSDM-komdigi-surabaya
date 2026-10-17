@@ -67,7 +67,7 @@ export const SettingsView: React.FC = () => {
       perms: ['Bisa Booking Lab (Utama)', 'Pantau & Batalkan Booking Sendiri', 'Check-In QR Presensi', 'Input Feedback', 'Tidak Bisa Tambah/Hapus Lab'] 
     },
     { 
-      role: 'Viewer / Pimpinan Balai (Kepala BPSDM)', 
+      role: 'Viewer / Pimpinan Balai (Kepala BLSDM KOMDIGI SURABAYA)', 
       level: 'LEVEL 05 · EXECUTIVE VIEWER',
       canBook: 'Tidak Bisa Booking Lab (Read-Only)',
       canAdd: 'Tidak Bisa Menambah Lab',
@@ -120,7 +120,7 @@ export const SettingsView: React.FC = () => {
               <Clock className="w-4 h-4 text-blue-700" />
               <h2 className="font-bold text-sm text-slate-800">Parameter Jam Operasional & Aturan Buffer</h2>
             </div>
-            <span className="text-[10px] text-slate-400 font-mono">SOP BPSDM</span>
+            <span className="text-[10px] text-slate-400 font-mono">SOP BLSDM</span>
           </div>
 
           <form onSubmit={handleSaveConfig} className="space-y-4">
@@ -128,7 +128,7 @@ export const SettingsView: React.FC = () => {
               <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
-                  Mode Baca Saja: Hanya <strong>Admin Sistem</strong> yang memiliki wewenang untuk mengubah parameter operasional lab BPSDM.
+                  Mode Baca Saja: Hanya <strong>Admin Sistem</strong> yang memiliki wewenang untuk mengubah parameter operasional lab BLSDM KOMDIGI SURABAYA.
                 </span>
               </div>
             )}
@@ -280,7 +280,7 @@ export const SettingsView: React.FC = () => {
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden text-xs">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <span className="font-bold text-slate-800">Akun Pengguna Terdaftar dalam Sistem SIMLAB</span>
-          <span className="text-[11px] text-slate-500">BPSDM Komdigi</span>
+          <span className="text-[11px] text-slate-500">BLSDM KOMDIGI SURABAYA</span>
         </div>
 
         <div className="overflow-x-auto">

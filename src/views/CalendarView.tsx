@@ -297,7 +297,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-slate-900">Kalender Terpadu Laboratorium</h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-              Satu Kalender Terpusat BPSDM
+              Satu Kalender Terpusat BLSDM KOMDIGI SURABAYA
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">

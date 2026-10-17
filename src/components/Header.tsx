@@ -50,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   // View title translation
   const viewTitles: Record<string, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Dashboard Operasional', subtitle: 'Monitoring real-time utilisasi dan status laboratorium BPSDM' },
+    dashboard: { title: 'Dashboard Operasional', subtitle: 'Monitoring real-time utilisasi dan status laboratorium BLSDM KOMDIGI SURABAYA' },
     booking: { title: 'Booking & Ketersediaan Lab', subtitle: 'Pengajuan peminjaman laboratorium terintegrasi conflict detection' },
     calendar: { title: 'Kalender Jadwal Laboratorium', subtitle: 'Visualisasi jadwal harian, mingguan, dan bulanan seluruh ruangan' },
     laboratories: { title: 'Master Data Laboratorium', subtitle: 'Spesifikasi teknis, inventaris fasilitas, dan kesiapan operasional' },
@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
     settings: { title: 'Pengaturan & Hak Akses', subtitle: 'Konfigurasi parameter operasional dan matriks kewenangan' },
   };
 
-  const currentInfo = viewTitles[activeView] || { title: 'SIMLAB SMART', subtitle: 'Balai Pelatihan SDM Komdigi' };
+  const currentInfo = viewTitles[activeView] || { title: 'SIMLAB SMART', subtitle: 'BLSDM KOMDIGI SURABAYA' };
 
   // Pending notifications
   const pendingApprovals = bookings.filter(b => b.status === 'submitted');
@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span>BPSDM Komdigi</span>
+            <span>BLSDM KOMDIGI SURABAYA</span>
             <span aria-hidden="true" className="text-slate-300">/</span>
             <span className="text-slate-800 font-semibold">{currentInfo.title}</span>
 
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <Clock className="w-3.5 h-3.5 text-amber-600" />
                       <span>{pendingApprovals.length} Pengajuan Menunggu Review</span>
                     </div>
-                    <p className="text-slate-600 mt-0.5">Memerlukan persetujuan Kasubag Umum BPSDM.</p>
+                    <p className="text-slate-600 mt-0.5">Memerlukan persetujuan Kasubag Tata Usaha & Sarpras BLSDM.</p>
                   </div>
                 )}
                 {criticalTickets.length > 0 && (

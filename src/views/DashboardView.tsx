@@ -80,7 +80,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     total_lab: {
       label: 'Total Laboratorium',
       value: totalLabs,
-      change: '6 Unit Terakreditasi BPSDM',
+      change: '6 Unit Terakreditasi BLSDM',
       icon: Building2,
       color: 'text-blue-700',
       bg: 'bg-blue-50/80',
@@ -164,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/30 text-blue-200 border border-blue-400/30">
                 Pusat Kendali Terpadu
               </span>
-              <span className="text-xs text-blue-200">BPSDM Komdigi RI</span>
+              <span className="text-xs text-blue-200">BLSDM KOMDIGI SURABAYA</span>
             </div>
             <h1 className="text-xl font-bold mt-1 text-white tracking-tight">
               SIMLAB SMART — Manajemen Laboratorium Terintegrasi

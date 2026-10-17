@@ -73,7 +73,7 @@ export const ReportDamageModal: React.FC<ReportDamageModalProps> = ({
             <ShieldAlert className="w-5 h-5 text-rose-400" />
             <div>
               <span className="font-bold text-sm">Pelaporan Kerusakan Fasilitas Lab</span>
-              <p className="text-[11px] text-rose-300">Pengajuan Tiket Perbaikan Tim Sarana BPSDM Komdigi</p>
+              <p className="text-[11px] text-rose-300">Pengajuan Tiket Perbaikan Tim Sarpras BLSDM KOMDIGI SURABAYA</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-rose-300 hover:text-white rounded-lg">

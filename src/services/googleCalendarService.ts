@@ -164,7 +164,7 @@ export const createGoogleCalendarEvent = async (
   const endDateTime = `${booking.date}T${booking.endTime}:00+07:00`;
 
   const payload = {
-    summary: `[SIMLAB BPSDM] ${booking.activityTitle} - ${resolvedLabName}`,
+    summary: `[SIMLAB BLSDM] ${booking.activityTitle} - ${resolvedLabName}`,
     description: `KODE BOOKING: ${booking.bookingCode}
 Laboratorium: ${resolvedLabName}
 Kegiatan: ${booking.activityTitle} (${booking.activityType.toUpperCase()})
@@ -175,8 +175,8 @@ Fasilitas Dibutuhkan: ${booking.requiredFacilities.length ? booking.requiredFaci
 Catatan Tambahan: ${booking.notes || '-'}
 
 Status SIMLAB: Disetujui & Terjadwal
-Balai Pelatihan Sumber Daya Manusia Komdigi RI`,
-    location: `${resolvedLabName}, Balai Pelatihan Sumber Daya Manusia Komdigi RI`,
+BLSDM KOMDIGI SURABAYA`,
+    location: `${resolvedLabName}, BLSDM KOMDIGI SURABAYA, Jl. Raya Ketintang No. 156 Surabaya`,
     start: {
       dateTime: startDateTime,
       timeZone: 'Asia/Jakarta',

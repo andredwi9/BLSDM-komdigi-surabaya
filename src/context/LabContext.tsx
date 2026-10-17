@@ -96,7 +96,7 @@ interface LabContextType {
 
 const LabContext = createContext<LabContextType | undefined>(undefined);
 
-const STORAGE_KEY_PREFIX = 'simlab_bpsdm_';
+const STORAGE_KEY_PREFIX = 'simlab_blsdm_';
 
 export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<string>('dashboard');
@@ -193,7 +193,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!found) {
       return { 
         success: false, 
-        message: 'NIP, Email, atau Username tidak terdaftar dalam pangkalan data SIMLAB BPSDM Komdigi.' 
+        message: 'NIP, Email, atau Username tidak terdaftar dalam pangkalan data SIMLAB BLSDM KOMDIGI SURABAYA.' 
       };
     }
 
@@ -353,7 +353,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (targetLab.status === 'ditutup') {
       return {
         hasConflict: true,
-        reason: `Laboratorium ${targetLab.name} sedang ditutup sementara untuk kegiatan internal BPSDM.`,
+        reason: `Laboratorium ${targetLab.name} sedang ditutup sementara untuk kegiatan internal BLSDM KOMDIGI SURABAYA.`,
         conflictType: 'maintenance',
         suggestions: ['Gunakan lab lain yang tersedia.'],
       };
@@ -488,7 +488,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else if (newStatus === 'approved') {
         updated.approvedAt = timeStr;
         updated.approvedBy = currentUser.name;
-        updated.approvalNote = note || 'Pengajuan memenuhi syarat pemanfaatan lab BPSDM.';
+        updated.approvalNote = note || 'Pengajuan memenuhi syarat pemanfaatan lab BLSDM KOMDIGI SURABAYA.';
       } else if (newStatus === 'rejected') {
         updated.rejectionReason = note || 'Ditolak karena ketidaksesuaian prosedur atau prioritas agenda kedinasan.';
       }

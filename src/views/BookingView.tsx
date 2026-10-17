@@ -18,7 +18,9 @@ import {
   CalendarCheck,
   CalendarPlus,
   ExternalLink,
-  Trash2
+  Trash2,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
 import { Booking, BookingStatus } from '../types';
@@ -28,6 +30,7 @@ import {
   getCalendarAccessToken, 
   subscribeToCalendarAuth 
 } from '../services/googleCalendarService';
+import { PrintableBeritaAcara } from '../components/reports/PrintableBeritaAcara';
 
 interface BookingViewProps {
   onOpenBookingModal: (labId?: string) => void;
@@ -135,6 +138,35 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [newEndTime, setNewEndTime] = useState('');
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
+  // Berita Acara state
+  const [beritaAcaraBooking, setBeritaAcaraBooking] = useState<Booking | null>(null);
+
+  const handleExportBookingsCSV = () => {
+    const headers = ['Kode Booking', 'Status', 'Kegiatan', 'Laboratorium', 'Tanggal', 'Waktu', 'Pemohon / PIC', 'NIP', 'Unit Kerja', 'Peserta', 'GCal Terhubung'];
+    const rows = filteredBookings.map(b => [
+      b.bookingCode,
+      b.status,
+      `"${b.activityTitle.replace(/"/g, '""')}"`,
+      `"${b.labName.replace(/"/g, '""')}"`,
+      b.date,
+      `"${b.startTime} - ${b.endTime}"`,
+      `"${b.userName.replace(/"/g, '""')}"`,
+      b.userNip || '-',
+      `"${b.userUnit.replace(/"/g, '""')}"`,
+      b.actualParticipants || b.participants,
+      b.googleCalendarEventId ? 'Ya' : 'Tidak'
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Daftar_Booking_SIMLAB_BLSDM_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Status mapping
   const statusBadges: Record<BookingStatus, { label: string; bg: string; text: string; border: string }> = {
     submitted: { label: 'Diajukan (Menunggu Review)', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
@@ -174,7 +206,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     setActionTargetBooking(booking);
     setActionModalType(type);
     if (type === 'approve') {
-      setActionNote('Disetujui untuk pemanfaatan sarana dan prasarana pelatihan BPSDM Komdigi.');
+      setActionNote('Disetujui untuk pemanfaatan sarana dan prasarana pelatihan BLSDM KOMDIGI SURABAYA.');
     } else if (type === 'review') {
       setActionNote('Fasilitas PC, pendingin udara, dan jaringan LAN telah dicek dan dinyatakan siap operasional.');
     } else {
@@ -291,7 +323,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Semua Jadwal Laboratorium BPSDM ({bookings.length})
+          Semua Jadwal Laboratorium BLSDM ({bookings.length})
         </button>
         <button
           onClick={() => setScopeTab('mine')}
@@ -324,32 +356,41 @@ export const BookingView: React.FC<BookingViewProps> = ({
           />
         </div>
 
-        {/* Status segmented filters */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
-          {[
-            { id: 'all', label: 'Semua Status' },
-            { id: 'submitted', label: 'Menunggu Review' },
-            { id: 'approved', label: 'Disetujui' },
-            { id: 'completed', label: 'Selesai' },
-            { id: 'rejected', label: 'Ditolak/Batal' },
-          ].map((tab) => {
-            const isSelected = statusFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  isSelected 
-                    ? 'bg-blue-700 text-white font-semibold' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+          {/* Status segmented filters */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+            {[
+              { id: 'all', label: 'Semua Status' },
+              { id: 'submitted', label: 'Menunggu Review' },
+              { id: 'approved', label: 'Disetujui' },
+              { id: 'completed', label: 'Selesai' },
+              { id: 'rejected', label: 'Ditolak/Batal' },
+            ].map((tab) => {
+              const isSelected = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                    isSelected 
+                      ? 'bg-blue-700 text-white font-semibold' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={handleExportBookingsCSV}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer text-xs shrink-0 self-start md:self-auto"
+            title="Ekspor Seluruh Jadwal Peminjaman ke CSV"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Ekspor Jadwal (CSV)</span>
+          </button>
         </div>
-      </div>
 
       {/* Table & Cards List of Bookings */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -824,7 +865,17 @@ export const BookingView: React.FC<BookingViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex items-center justify-end">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+              {['approved', 'completed'].includes(selectedBooking.status) ? (
+                <button
+                  type="button"
+                  onClick={() => setBeritaAcaraBooking(selectedBooking)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Cetak / Unduh Berita Acara (PDF)</span>
+                </button>
+              ) : <div />}
               <button
                 onClick={() => setSelectedBooking(null)}
                 className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
@@ -888,6 +939,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Dedicated Printable Berita Acara Modal with PDF Download */}
+      <PrintableBeritaAcara
+        isOpen={!!beritaAcaraBooking}
+        onClose={() => setBeritaAcaraBooking(null)}
+        booking={beritaAcaraBooking}
+        lab={labs.find(l => l.id === beritaAcaraBooking?.labId)}
+      />
     </div>
   );
 };

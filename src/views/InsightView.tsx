@@ -100,9 +100,9 @@ export const InsightView: React.FC<InsightViewProps> = ({ onOpenBookingModal }) 
 
   const handleCopyBrief = () => {
     const briefText = `
-MANAGEMENT BRIEF: UTILISASI & PEMELIHARAAN LABORATORIUM BPSDM KOMDIGI
+MANAGEMENT BRIEF: UTILISASI & PEMELIHARAAN LABORATORIUM BLSDM KOMDIGI SURABAYA
 Tanggal: 7 Oktober 2026
-Kepada: Kepala Balai Pelatihan SDM Komdigi
+Kepada: Kepala BLSDM KOMDIGI SURABAYA (Bagus Winarko, S.Kom., M.T.)
 
 1. STATUS PEMANFAATAN & UTILISASI:
 - Rata-rata utilisasi seluruh laboratorium mencapai 78.4% (meningkat +6.4% dari bulan lalu).
@@ -163,7 +163,7 @@ c. Realokasi pelatihan coding skala besar ke Lab RPL R. 301 untuk menghindari ke
               <Sparkles className="w-3 h-3 text-sky-400" />
               SIMLAB AI Intelligence Core
             </span>
-            <span className="text-xs text-blue-200">Fase Lanjut BPSDM Komdigi</span>
+            <span className="text-xs text-blue-200">BLSDM KOMDIGI SURABAYA</span>
           </div>
           <h1 className="text-xl font-bold mt-1 text-white">Insight & Rekomendasi Cerdas Pengelolaan Lab</h1>
           <p className="text-xs text-blue-100/90 mt-1 max-w-2xl">
@@ -683,7 +683,7 @@ c. Realokasi pelatihan coding skala besar ke Lab RPL R. 301 untuk menghindari ke
       {activeTab === 'ai_chat' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs flex flex-col h-[560px]">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Konsultan Cerdas Optimalisasi Laboratorium BPSDM</h2>
+            <h2 className="text-base font-bold text-slate-900">Konsultan Cerdas Optimalisasi Laboratorium BLSDM KOMDIGI SURABAYA</h2>
             <p className="text-[11px] text-slate-500">
               Tanyakan analisis spesifik, solusi efisiensi anggaran pemeliharaan, atau rekomendasi jadwal langsung ke asisten data.
             </p>

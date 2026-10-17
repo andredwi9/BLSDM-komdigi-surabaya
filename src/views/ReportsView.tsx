@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
 import { PrintableInstitutionalReport } from '../components/reports/PrintableInstitutionalReport';
+import { PrintableBeritaAcara } from '../components/reports/PrintableBeritaAcara';
 
 export const ReportsView: React.FC = () => {
   const { labs, bookings, tickets, auditLogs, currentUser } = useLab();
@@ -52,27 +53,77 @@ export const ReportsView: React.FC = () => {
       };
     });
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleExportCSV = () => {
-    const headers = ['Kode Lab', 'Nama Laboratorium', 'Total Sesi', 'Total Jam', 'Peserta Terlayani', 'Utilisasi (%)', 'Downtime (Jam)'];
+    const headers = ['Kode Lab', 'Nama Laboratorium', 'Lantai & Ruang', 'Kapasitas Kursi', 'Total Sesi Terjadwal', 'Total Jam Operasional', 'Peserta Terlayani', 'Tingkat Utilisasi (%)', 'Downtime (Jam)', 'Health Score (%)', 'Status Operasional'];
     const rows = labReports.map(r => [
       r.lab.code,
-      `"${r.lab.name}"`,
+      `"${r.lab.name.replace(/"/g, '""')}"`,
+      `"${r.lab.floor} (${r.lab.roomNumber})"`,
+      r.lab.capacity,
       r.totalSessions,
       r.totalHours,
       r.totalParticipants,
       `${r.utilization}%`,
       r.downtime,
+      `${r.lab.healthScore}%`,
+      r.lab.status
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Laporan_SIMLAB_BPSDM_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Laporan_Rekapitulasi_SIMLAB_BLSDM_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportBeritaAcaraCSV = () => {
+    const headers = ['Kode Booking', 'Status', 'Kegiatan', 'Laboratorium', 'Tanggal', 'Waktu Mulai', 'Waktu Selesai', 'Penyelenggara / PIC', 'NIP', 'Unit Kerja', 'Peserta Terdaftar', 'Peserta Hadir', 'Status Verifikasi'];
+    const rows = filteredBookings.map(b => [
+      b.bookingCode,
+      b.status,
+      `"${b.activityTitle.replace(/"/g, '""')}"`,
+      `"${b.labName.replace(/"/g, '""')}"`,
+      b.date,
+      b.startTime,
+      b.endTime,
+      `"${b.userName.replace(/"/g, '""')}"`,
+      b.userNip || '-',
+      `"${b.userUnit.replace(/"/g, '""')}"`,
+      b.participants,
+      b.actualParticipants || b.participants,
+      b.checkInTime ? 'Presensi QR Terverifikasi' : 'Terjadwal'
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Rekap_Berita_Acara_SIMLAB_BLSDM_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportAuditCSV = () => {
+    const headers = ['Waktu (WIB)', 'Nama Pengguna', 'Peran (Role)', 'Tindakan', 'Entitas', 'ID Entitas', 'Rincian Aktivitas'];
+    const rows = auditLogs.map(l => [
+      `"${l.timestamp}"`,
+      `"${l.userName.replace(/"/g, '""')}"`,
+      l.userRole,
+      `"${l.action.replace(/"/g, '""')}"`,
+      l.entity,
+      l.entityId,
+      `"${l.details.replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Log_Audit_SIMLAB_BLSDM_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -90,7 +141,7 @@ export const ReportsView: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Rekapitulasi berkala utilisasi sarana, berita acara pemakaian, dan log audit kepatuhan tata kelola BPSDM Komdigi.
+            Rekapitulasi berkala utilisasi sarana, berita acara pemakaian, dan log audit kepatuhan tata kelola BLSDM KOMDIGI SURABAYA.
           </p>
         </div>
 
@@ -249,35 +300,55 @@ export const ReportsView: React.FC = () => {
       {/* Tab 2: Berita Acara */}
       {activeTab === 'berita_acara' && (
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4 text-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
             <div>
               <h2 className="font-bold text-slate-900 text-sm">Berita Acara Serah Terima Penggunaan Lab</h2>
-              <p className="text-[11px] text-slate-500">Pilih sesi pelatihan untuk meninjau dan mencetak format berita acara resmi.</p>
+              <p className="text-[11px] text-slate-500">Pilih sesi pelatihan untuk meninjau, mencetak naskah dinas, atau mengunduh PDF berita acara resmi.</p>
             </div>
+            <button
+              onClick={handleExportBeritaAcaraCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer text-xs shrink-0 self-start sm:self-auto"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ekspor Rekap BA (CSV)</span>
+            </button>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {bookings.map((b) => (
-              <div key={b.id} className="py-3 flex items-center justify-between gap-4">
+            {filteredBookings.map((b) => (
+              <div key={b.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-blue-700">{b.bookingCode}</span>
-                    <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                    <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded ${
+                      b.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                      b.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                      b.status === 'reviewed' ? 'bg-indigo-100 text-indigo-800' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
                       {b.status}
                     </span>
+                    {b.checkInTime && (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-mono font-medium">
+                        ✓ QR Presensi Valid
+                      </span>
+                    )}
                   </div>
                   <strong className="text-slate-900 block mt-0.5">{b.activityTitle}</strong>
                   <span className="text-[11px] text-slate-500">
-                    {b.labName} · {b.date} ({b.startTime} - {b.endTime} WIB) · Penyelenggara: {b.userName}
+                    {b.labName} · {b.date} ({b.startTime} - {b.endTime} WIB) · Penyelenggara: {b.userName} ({b.userUnit})
                   </span>
                 </div>
 
-                <button
-                  onClick={() => setShowBeritaAcaraModal(b)}
-                  className="px-3 py-1.5 font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shrink-0"
-                >
-                  Buka Berita Acara
-                </button>
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                  <button
+                    onClick={() => setShowBeritaAcaraModal(b)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Buka / Cetak PDF</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -287,9 +358,18 @@ export const ReportsView: React.FC = () => {
       {/* Tab 3: Audit Logs */}
       {activeTab === 'audit' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden text-xs">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <span className="font-bold text-slate-800">Catatan Audit Aktivitas & Rekam Jejak Sistem (Audit Trail)</span>
-            <span className="text-[11px] text-slate-500 font-mono">Total {auditLogs.length} Aktivitas Tercatat</span>
+          <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="font-bold text-slate-800 block">Catatan Audit Aktivitas & Rekam Jejak Sistem (Audit Trail)</span>
+              <span className="text-[11px] text-slate-500 font-mono">Total {auditLogs.length} Aktivitas Terverifikasi oleh BLSDM KOMDIGI SURABAYA</span>
+            </div>
+            <button
+              onClick={handleExportAuditCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer text-xs shrink-0 self-start sm:self-auto"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ekspor Audit (CSV)</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -327,78 +407,13 @@ export const ReportsView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Berita Acara Preview */}
-      {showBeritaAcaraModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto p-6 space-y-4 text-xs font-sans">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <span className="font-bold text-sm text-slate-900">Format Resmi Berita Acara Serah Terima Lab</span>
-              <button onClick={() => setShowBeritaAcaraModal(null)} className="p-1 text-slate-400 hover:text-slate-800">
-                ✕
-              </button>
-            </div>
-
-            {/* Official Institutional Letterhead Simulation */}
-            <div className="border p-6 rounded-xl border-slate-300 space-y-4 bg-white text-slate-800">
-              <div className="text-center border-b-2 border-slate-800 pb-3 space-y-0.5">
-                <p className="font-bold text-xs uppercase tracking-wider">KEMENTERIAN KOMUNIKASI DAN DIGITAL REPUBLIK INDONESIA</p>
-                <p className="font-bold text-sm uppercase">BADAN PENGEMBANGAN SUMBER DAYA MANUSIA</p>
-                <p className="text-[10px] text-slate-600">BALAI PELATIHAN SUMBER DAYA MANUSIA DAN PENELITIAN KOMUNIKASI DAN DIGITAL</p>
-              </div>
-
-              <div className="text-center pt-1">
-                <span className="font-bold underline text-xs">BERITA ACARA PEMANFAATAN FASILITAS LABORATORIUM</span>
-                <p className="font-mono text-[10px] text-slate-500">Nomor: BA/SIMLAB/{showBeritaAcaraModal.bookingCode}/X/2026</p>
-              </div>
-
-              <p className="leading-relaxed text-[11px]">
-                Pada hari ini, telah diselesaikan rangkaian pemanfaatan fasilitas laboratorium komputer dengan rincian sebagai berikut:
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-[11px] p-3 bg-slate-50 rounded-lg">
-                <div>Nama Kegiatan: <strong>{showBeritaAcaraModal.activityTitle}</strong></div>
-                <div>Laboratorium: <strong>{showBeritaAcaraModal.labName}</strong></div>
-                <div>Tanggal: <strong>{showBeritaAcaraModal.date}</strong></div>
-                <div>Waktu Sesi: <strong>{showBeritaAcaraModal.startTime} - {showBeritaAcaraModal.endTime} WIB</strong></div>
-                <div>Penyelenggara: <strong>{showBeritaAcaraModal.userName}</strong></div>
-                <div>Unit Kerja: <strong>{showBeritaAcaraModal.userUnit}</strong></div>
-                <div>Jumlah Peserta: <strong>{showBeritaAcaraModal.actualParticipants || showBeritaAcaraModal.participants} Orang</strong></div>
-                <div>Status Akhir: <strong className="text-emerald-700">Lengkap & Baik</strong></div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 pt-6 text-center text-[11px]">
-                <div>
-                  <p>Pihak Pemohon / PIC,</p>
-                  <div className="h-14"></div>
-                  <strong className="underline block">{showBeritaAcaraModal.userName}</strong>
-                  <span className="text-[10px] text-slate-500">NIP. {showBeritaAcaraModal.userNip || '-'}</span>
-                </div>
-                <div>
-                  <p>Petugas Pengelola Lab BPSDM,</p>
-                  <div className="h-14"></div>
-                  <strong className="underline block">Ahmad Faisal, A.Md.T.</strong>
-                  <span className="text-[10px] text-slate-500">NIP. 19950315 201903 1 004</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-200 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setShowBeritaAcaraModal(null)}
-                className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-              >
-                Tutup
-              </button>
-              <button
-                onClick={handlePrint}
-                className="px-4 py-2 font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer"
-              >
-                Cetak Dokumen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Dedicated Printable Berita Acara Modal with PDF Download */}
+      <PrintableBeritaAcara
+        isOpen={!!showBeritaAcaraModal}
+        onClose={() => setShowBeritaAcaraModal(null)}
+        booking={showBeritaAcaraModal}
+        lab={labs.find(l => l.id === showBeritaAcaraModal?.labId)}
+      />
 
       {/* Global Printable Institutional Report PDF Modal */}
       <PrintableInstitutionalReport

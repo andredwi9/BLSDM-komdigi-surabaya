@@ -59,7 +59,7 @@ export const AnalyticsView: React.FC = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-slate-900">Analytics Utilisasi & Kapasitas Laboratorium</h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-              Data Terintegrasi BPSDM
+              Data Terintegrasi BLSDM KOMDIGI SURABAYA
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -318,7 +318,7 @@ export const AnalyticsView: React.FC = () => {
               trend: '-2.1%',
             },
             {
-              unit: 'Subbag Sarana & Internal BPSDM',
+              unit: 'Subbag Tata Usaha & Sarpras BLSDM',
               hours: '10 Jam',
               sessions: '3 Sesi',
               pct: 8,

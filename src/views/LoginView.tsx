@@ -90,7 +90,7 @@ export const LoginView: React.FC = () => {
 
         <div className="flex items-center gap-2 text-[11px] text-slate-400">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="hidden sm:inline">Server BPSDM Online & Aman</span>
+          <span className="hidden sm:inline">Server BLSDM Online & Aman</span>
         </div>
       </header>
 
@@ -142,7 +142,7 @@ export const LoginView: React.FC = () => {
             </div>
 
             <div className="pt-6 border-t border-slate-800/80 mt-6 flex items-center justify-between text-[11px] text-slate-500">
-              <span>SOP BPSDM Komdigi</span>
+              <span>SOP BLSDM KOMDIGI SURABAYA</span>
               <span>ISO/IEC 27001 Certified</span>
             </div>
           </div>
@@ -262,7 +262,7 @@ export const LoginView: React.FC = () => {
                     </label>
 
                     <span className="text-[11px] text-slate-500">
-                      Bantuan: Subbag TU BPSDM
+                      Bantuan: Subbag TU & Sarpras BLSDM
                     </span>
                   </div>
 

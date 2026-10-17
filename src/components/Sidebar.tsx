@@ -96,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
               <span className="font-bold text-base tracking-tight text-white">SIMLAB</span>
               <span className="font-semibold text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">SMART</span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate font-medium">BPSDM Komdigi</p>
+            <p className="text-[10px] text-slate-400 truncate font-medium">BLSDM KOMDIGI SURABAYA</p>
           </div>
         </div>
 

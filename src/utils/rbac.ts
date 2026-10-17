@@ -39,7 +39,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
   admin: {
     role: 'admin',
     roleName: 'Admin Sistem',
-    roleTitle: 'Administrator Sistem & TI BPSDM',
+    roleTitle: 'Administrator Sistem & TI BLSDM KOMDIGI SURABAYA',
     levelBadge: 'LEVEL 01 · FULL ACCESS',
     description: 'Akses konfigurasi penuh, pengelolaan master data lab, wewenang lintas unit, dan audit trail komprehensif.',
     badgeBg: 'bg-purple-100',
@@ -77,7 +77,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
   kasubag: {
     role: 'kasubag',
     roleName: 'Kasubag / Manager Sarpras & TU',
-    roleTitle: 'Kasubag Sarana & Tata Usaha BPSDM',
+    roleTitle: 'Kasubag Tata Usaha & Sarpras BLSDM KOMDIGI SURABAYA',
     levelBadge: 'LEVEL 02 · APPROVAL & POLICY',
     description: 'Persetujuan kebijakan booking, monitoring pemenuhan SLA perbaikan, dan pengawasan berkala utilisasi (Bebas konflik kepentingan: tidak mengajukan booking mandiri).',
     badgeBg: 'bg-blue-100',
@@ -116,7 +116,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
   petugas: {
     role: 'petugas',
     roleName: 'Petugas Lab / Pengelola',
-    roleTitle: 'Pengelola Laboratorium Komputer BPSDM',
+    roleTitle: 'Pengelola Laboratorium Komputer BLSDM KOMDIGI SURABAYA',
     levelBadge: 'LEVEL 03 · OPERATIONAL & FIELD',
     description: 'Operasional lapangan, validasi teknis kesiapan ruangan, pemindaian QR presensi, inspeksi pra/pasca pakai, dan penanganan tiket.',
     badgeBg: 'bg-emerald-100',
@@ -154,7 +154,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
   pemohon: {
     role: 'pemohon',
     roleName: 'Pemohon / Instruktur Pelatihan',
-    roleTitle: 'Instruktur & Pengampu Diklat Digital Talent',
+    roleTitle: 'Instruktur & Pengampu Diklat Digital Talent BLSDM SURABAYA',
     levelBadge: 'LEVEL 04 · APPLICANT',
     description: 'Pengajuan peminjaman laboratorium, pemantauan status jadwal sendiri, check-in kehadiran, dan pengisian ulasan kepuasan.',
     badgeBg: 'bg-amber-100',
@@ -191,8 +191,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissionConfig> = {
 
   pimpinan: {
     role: 'pimpinan',
-    roleName: 'Pimpinan Balai / Kepala BPSDM',
-    roleTitle: 'Kepala Balai Pelatihan SDM Komdigi',
+    roleName: 'Pimpinan Balai / Kepala BLSDM',
+    roleTitle: 'Kepala BLSDM KOMDIGI SURABAYA',
     levelBadge: 'LEVEL 05 · EXECUTIVE VIEWER',
     description: 'Akses eksekutif monitoring real-time, ringkasan AI Management Brief, dan laporan analisis pemanfaatan aset tanpa hak pengeditan.',
     badgeBg: 'bg-indigo-100',

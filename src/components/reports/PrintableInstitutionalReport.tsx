@@ -11,8 +11,12 @@ import {
   Layers, 
   Calendar,
   Sliders,
-  Copy
+  Copy,
+  Loader2,
+  FileCode
 } from 'lucide-react';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 import { Laboratory, Booking, MaintenanceTicket, User } from '../../types';
 
 interface PrintableInstitutionalReportProps {
@@ -40,6 +44,7 @@ export const PrintableInstitutionalReport: React.FC<PrintableInstitutionalReport
   const [includeMaintenance, setIncludeMaintenance] = useState(true);
   const [includeSignatures, setIncludeSignatures] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   if (!isOpen) return null;
 
@@ -80,11 +85,90 @@ export const PrintableInstitutionalReport: React.FC<PrintableInstitutionalReport
     window.print();
   };
 
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('printable-institutional-report-sheet');
+    if (!element) return;
+
+    setIsGeneratingPdf(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = 210;
+      const pageHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const safePeriod = periodText.replace(/[^a-zA-Z0-9]/g, '_');
+      pdf.save(`Laporan_SIMLAB_BLSDM_SURABAYA_${safePeriod}.pdf`);
+    } catch (err) {
+      console.error('Gagal memproses PDF institusi:', err);
+      window.print();
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const handleDownloadHTML = () => {
+    const element = document.getElementById('printable-institutional-report-sheet');
+    if (!element) return;
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Laporan Akuntabilitas SIMLAB BLSDM KOMDIGI SURABAYA - ${periodText}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #f8fafc; padding: 24px; color: #0f172a; }
+    .printable-sheet { background: #ffffff; max-width: 800px; margin: 0 auto; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body>
+  <div class="printable-sheet">
+    ${element.innerHTML}
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laporan_SIMLAB_BLSDM_SURABAYA_${periodText.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopySummary = () => {
     const text = `
-LAPORAN PEMANFAATAN LABORATORIUM KOMPUTER BPSDM KOMDIGI
+LAPORAN PEMANFAATAN LABORATORIUM KOMPUTER BLSDM KOMDIGI SURABAYA
 Periode: ${periodText}
-Nomor: LAP/SIMLAB-BPSDM/X/2026/04
+Nomor: LAP/SIMLAB-BLSDM/X/2026/04
 
 1. CAPAIAN KINERJA:
 - Rata-rata Utilisasi: ${avgUtilization}%
@@ -96,7 +180,7 @@ Nomor: LAP/SIMLAB-BPSDM/X/2026/04
 2. LABORATORIUM TERLAYANI:
 ${targetLabs.map(l => `- ${l.code}: ${l.name} (Utilisasi: ${l.utilizationRate}%, Kapasitas: ${l.capacity} Kursi, Downtime: ${l.downtimeHoursThisMonth}j)`).join('\n')}
 
-Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
+Penanggung Jawab: Subbagian Tata Usaha & Sarpras BLSDM KOMDIGI SURABAYA
     `.trim();
 
     navigator.clipboard.writeText(text);
@@ -105,25 +189,25 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[96vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 print:border-none print:shadow-none print:max-w-none print:max-h-none print:rounded-none">
+    <div className="printable-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static">
+      <div className="printable-modal-container bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[96vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 print:border-none print:shadow-none print:max-w-none print:max-h-none print:rounded-none">
         
         {/* Top Floating Control Bar (Hidden on print) */}
-        <div className="px-5 py-3.5 bg-[#0B192C] text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 print:hidden shrink-0">
+        <div className="no-print px-5 py-3.5 bg-[#0B192C] text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs">
               PDF
             </div>
             <div>
               <span className="font-bold text-sm tracking-tight">Format Cetak Laporan Resmi Institusi (PDF)</span>
-              <p className="text-[11px] text-slate-300">Format standar naskah dinas Balai Pelatihan SDM Komdigi</p>
+              <p className="text-[11px] text-slate-300">Format naskah dinas resmi BLSDM KOMDIGI SURABAYA</p>
             </div>
           </div>
 
           {/* Controls & Options */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="hidden md:flex items-center gap-2 text-xs bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-              <span className="text-[11px] text-slate-400">Opsi:</span>
+            <div className="hidden lg:flex items-center gap-2 text-xs bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+              <span className="text-[11px] text-slate-400">Sertakan:</span>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input 
                   type="checkbox" 
@@ -140,7 +224,7 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
                   onChange={(e) => setIncludeMaintenance(e.target.checked)}
                   className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="text-[11px]">Maintenance</span>
+                <span className="text-[11px]">Pemeliharaan</span>
               </label>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input 
@@ -155,19 +239,49 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
 
             <button
               onClick={handleCopySummary}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="Salin Ringkasan Teks"
+              className="px-2.5 py-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+              title="Salin Ringkasan Teks Laporan"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{copied ? 'Tersalin' : 'Salin'}</span>
             </button>
 
             <button
-              onClick={handlePrint}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              onClick={handleDownloadHTML}
+              className="px-2.5 py-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+              title="Unduh Berkas HTML Standalone"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Cetak / Ekspor PDF</span>
+              <FileCode className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">HTML</span>
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="px-3 py-1.5 text-xs font-semibold text-slate-100 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Cetak Melalui Dialog Browser"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-300" />
+              <span>Cetak (Print)</span>
+            </button>
+
+            {/* Primary Action: Direct Download PDF */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPdf}
+              className="px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Unduh File PDF Dokumen Resmi"
+            >
+              {isGeneratingPdf ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>Menyusun PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span>Unduh PDF (.pdf)</span>
+                </>
+              )}
             </button>
 
             <button
@@ -185,7 +299,10 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
           className="flex-1 overflow-y-auto p-6 sm:p-10 bg-slate-100 print:bg-white print:p-0 print:overflow-visible text-slate-800 text-xs font-sans"
         >
           {/* Printable White Paper Sheet */}
-          <div className="bg-white max-w-[800px] mx-auto p-8 sm:p-12 rounded-xl shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:max-w-none print:m-0 space-y-6">
+          <div 
+            id="printable-institutional-report-sheet"
+            className="printable-sheet bg-white max-w-[800px] mx-auto p-8 sm:p-12 rounded-xl shadow-md border border-slate-200 print:shadow-none print:border-none print:p-0 print:max-w-none print:m-0 space-y-6"
+          >
             
             {/* 1. Official Indonesian Institutional Letterhead (KOP SURAT) */}
             <div className="text-center border-b-[3px] border-double border-slate-900 pb-4 relative">
@@ -203,13 +320,13 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
                     KEMENTERIAN KOMUNIKASI DAN DIGITAL REPUBLIK INDONESIA
                   </h2>
                   <h3 className="font-bold text-[12px] uppercase text-slate-900 mt-0.5">
-                    BADAN PENGEMBANGAN SUMBER DAYA MANUSIA
+                    BALAI PELATIHAN DAN PENGEMBANGAN TEKNOLOGI INFORMASI DAN KOMUNIKASI
                   </h3>
                   <h4 className="font-semibold text-[11px] text-slate-800 uppercase">
-                    BALAI PELATIHAN SUMBER DAYA MANUSIA DAN PENELITIAN KOMUNIKASI DAN DIGITAL
+                    BLSDM KOMDIGI SURABAYA
                   </h4>
                   <p className="text-[10px] text-slate-600 mt-0.5">
-                    Jl. Medan Merdeka Barat No. 9, Gambir, Jakarta Pusat 10110 | Pos-el: bpsdm@komdigi.go.id | Laman: simlab.komdigi.go.id
+                    Jl. Raya Ketintang No. 156, Gayungan, Kota Surabaya, Jawa Timur 60231 | Pos-el: blsdm.surabaya@komdigi.go.id
                   </p>
                 </div>
               </div>
@@ -221,7 +338,7 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
                 LAPORAN AKUNTABILITAS KINERJA & UTILISASI LABORATORIUM
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[11px] text-slate-600 pt-0.5">
-                <span>NOMOR: LAP/SIMLAB-BPSDM/X/2026/04</span>
+                <span>NOMOR: LAP/SIMLAB-BLSDM/X/2026/04</span>
                 <span aria-hidden="true">·</span>
                 <span>PERIODE: {periodText.toUpperCase()}</span>
                 <span aria-hidden="true">·</span>
@@ -448,27 +565,27 @@ Penanggung Jawab: Subbagian Sarana & Tata Usaha BPSDM Komdigi
                 <div className="grid grid-cols-2 gap-8 text-center text-[11px]">
                   <div>
                     <p className="text-slate-600">Pejabat Pembuat Laporan,</p>
-                    <p className="text-slate-600">Kasubag Tata Usaha & Sarana BPSDM</p>
+                    <p className="text-slate-600">Kasubag Tata Usaha & Sarpras BLSDM</p>
                     <div className="h-16 flex items-center justify-center">
                       <span className="font-mono text-[9px] text-slate-400 italic">[Tanda Tangan Digital Terverifikasi]</span>
                     </div>
-                    <strong className="underline block text-slate-950 font-bold">Dra. Sri Wahyuni, M.T.I.</strong>
-                    <span className="text-[10px] text-slate-600 font-mono">NIP. 19790412 200501 2 003</span>
+                    <strong className="underline block text-slate-950 font-bold">Maulia Jayantina Islami, S.Kom., M.T.</strong>
+                    <span className="text-[10px] text-slate-600 font-mono">NIP. 19840715 200912 2 002</span>
                   </div>
 
                   <div>
                     <p className="text-slate-600">Mengetahui,</p>
-                    <p className="text-slate-600">Kepala Balai Pelatihan SDM Komdigi</p>
+                    <p className="text-slate-600">Kepala BLSDM KOMDIGI SURABAYA</p>
                     <div className="h-16 flex items-center justify-center">
                       <span className="font-mono text-[9px] text-slate-400 italic">[Tanda Tangan Digital Terverifikasi]</span>
                     </div>
-                    <strong className="underline block text-slate-950 font-bold">Dr. Ir. Haryanto Wibowo, M.Eng.</strong>
-                    <span className="text-[10px] text-slate-600 font-mono">NIP. 19710505 199703 1 001</span>
+                    <strong className="underline block text-slate-950 font-bold">Bagus Winarko, S.Kom., M.T.</strong>
+                    <span className="text-[10px] text-slate-600 font-mono">NIP. 19740510 199903 1 002</span>
                   </div>
                 </div>
 
                 <div className="mt-8 pt-3 border-t border-slate-200 text-center font-mono text-[9px] text-slate-400">
-                  Dokumen ini dicetak otomatis melalui SIMLAB SMART — Balai Pelatihan SDM Komdigi RI pada {currentDateFormatted}. Keaslian dokumen terjamin secara elektronik.
+                  Dokumen ini dicetak otomatis melalui SIMLAB SMART — BLSDM KOMDIGI SURABAYA pada {currentDateFormatted}. Keaslian dokumen terjamin secara elektronik.
                 </div>
               </div>
             )}

@@ -123,7 +123,7 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
         roomNumber: labRoomNumber,
         capacity: Number(labCapacity),
         status: 'tersedia',
-        description: labDesc || 'Laboratorium komputasi dan praktikum teknologi digital BPSDM Komdigi.',
+        description: labDesc || 'Laboratorium komputasi dan praktikum teknologi digital BLSDM KOMDIGI SURABAYA.',
         facilities: [
           { id: `f-${Date.now()}-1`, name: 'Workstation Komputer Standar', category: 'komputer', quantity: Number(labCapacity), condition: 'baik', specification: labCpu },
           { id: `f-${Date.now()}-2`, name: 'Proyektor Ultra HD 4K', category: 'audio_visual', quantity: 1, condition: 'baik', specification: 'Laser 5000 Lumens' },
@@ -206,7 +206,7 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Inventaris perangkat keras, spesifikasi workstation, kapasitas fisik, dan skor kesehatan aset terpusat BPSDM Komdigi.
+            Inventaris perangkat keras, spesifikasi workstation, kapasitas fisik, dan skor kesehatan aset terpusat BLSDM KOMDIGI SURABAYA.
           </p>
         </div>
 
@@ -242,7 +242,7 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
             </button>
           ) : (
             <div className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 font-medium text-[11px] flex items-center gap-1.5">
-              <span>Katalog Resmi BPSDM</span>
+              <span>Katalog Resmi BLSDM</span>
             </div>
           )}
         </div>
@@ -494,7 +494,7 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
                 </div>
               ) : (
                 <div className="text-[11px] text-slate-400">
-                  Data aset resmi BPSDM Komdigi
+                  Data aset resmi BLSDM KOMDIGI SURABAYA
                 </div>
               )}
               <button
