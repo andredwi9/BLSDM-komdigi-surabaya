@@ -25,10 +25,6 @@ import { LoginView } from './views/LoginView';
 const AppContent: React.FC = () => {
   const { activeView, isAuthenticated } = useLab();
 
-  if (!isAuthenticated) {
-    return <LoginView />;
-  }
-
   // Modal states
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [bookingPreselectedLabId, setBookingPreselectedLabId] = useState<string | undefined>();
@@ -93,6 +89,10 @@ const AppContent: React.FC = () => {
     setInspectionBookingId(bookingId);
     setIsInspectionModalOpen(true);
   };
+
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">

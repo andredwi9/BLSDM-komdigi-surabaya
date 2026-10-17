@@ -23,7 +23,8 @@ import {
   INITIAL_AUDIT_LOGS, 
   DEFAULT_KPI_SETTINGS 
 } from '../data/initialData';
-import { RolePermissionConfig, getRolePermissions } from '../utils/rbac';
+import { RolePermissionConfig, getRolePermissions, ROLE_PERMISSIONS } from '../utils/rbac';
+import { signInWithGoogleAccount } from '../services/googleCalendarService';
 
 export interface ConflictCheckResult {
   hasConflict: boolean;
@@ -42,6 +43,16 @@ interface LabContextType {
   permissions: RolePermissionConfig;
   login: (userIdOrRole: string) => boolean;
   loginWithCredentials: (identifier: string, pass: string) => { success: boolean; message: string; user?: User };
+  loginWithGoogle: () => Promise<{ success: boolean; message: string; user?: User }>;
+  registerUser: (data: {
+    name: string;
+    email: string;
+    password: string;
+    unit?: string;
+    phone?: string;
+    nip?: string;
+  }) => { success: boolean; message: string; user?: User };
+  updateUserRole: (userId: string, newRole: UserRole) => { success: boolean; message: string };
   logout: () => void;
   switchRole: (role: UserRole) => void;
   switchUser: (userId: string) => void;
@@ -100,14 +111,18 @@ const STORAGE_KEY_PREFIX = 'simlab_blsdm_';
 
 export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<string>('dashboard');
-  const [users] = useState<User[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}users`);
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
   const [currentUser, setCurrentUser] = useState<User>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}user_role`);
     if (saved) {
-      const found = INITIAL_USERS.find(u => u.role === saved);
+      const found = users.find(u => u.role === saved);
       if (found) return found;
     }
-    return INITIAL_USERS[0]; // default: Kasubag
+    return users[0] || INITIAL_USERS[0]; // default
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -117,6 +132,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const permissions = getRolePermissions(currentUser.role);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}users`, JSON.stringify(users));
+  }, [users]);
 
   const [labs, setLabs] = useState<Laboratory[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}labs`);
@@ -231,6 +250,149 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const registerUser = (data: {
+    name: string;
+    email: string;
+    password: string;
+    unit?: string;
+    phone?: string;
+    nip?: string;
+  }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    if (!cleanEmail || !data.password || !data.name.trim()) {
+      return { success: false, message: 'Harap lengkapi nama lengkap, email, dan kata sandi.' };
+    }
+
+    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return { success: false, message: 'Alamat email ini sudah terdaftar. Silakan gunakan email lain atau masuk ke akun Anda.' };
+    }
+
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      name: data.name.trim(),
+      nip: data.nip?.trim() || '-',
+      username: cleanEmail.split('@')[0],
+      password: data.password,
+      role: 'pemohon', // MANDATORY: Pendaftaran mandiri strictly hanya untuk akun Pemohon!
+      roleTitle: 'Pemohon / Instruktur Pelatihan (Terdaftar Mandiri)',
+      unit: data.unit?.trim() || 'Unit Kerja / Lembaga Pelatihan',
+      email: cleanEmail,
+      phone: data.phone?.trim() || '-',
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, 'pemohon');
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}is_auth`, 'true');
+
+    addAuditLogEntry('REGISTRASI AKUN BARU', 'User', newUser.id, `Pendaftaran akun Pemohon baru atas nama ${newUser.name} (${newUser.email}).`);
+
+    return { 
+      success: true, 
+      message: `Pendaftaran akun Pemohon berhasil! Selamat datang di SIMLAB, ${newUser.name}.`, 
+      user: newUser 
+    };
+  };
+
+  const loginWithGoogle = async (): Promise<{ success: boolean; message: string; user?: User }> => {
+    try {
+      const googleData = await signInWithGoogleAccount();
+      const cleanEmail = (googleData.email || '').toLowerCase();
+
+      let targetUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+
+      if (!targetUser) {
+        // Automatically register as Pemohon
+        targetUser = {
+          id: `user-google-${googleData.uid.slice(0, 8)}`,
+          name: googleData.displayName || 'Pemohon Google',
+          nip: '-',
+          username: cleanEmail.split('@')[0] || 'pemohon',
+          password: 'google-oauth-managed',
+          role: 'pemohon', // MANDATORY: Masuk dengan Google hanya untuk akun Pemohon!
+          roleTitle: 'Pemohon / Instruktur Pelatihan (Google SSO)',
+          unit: 'Pemohon Eksternal / Pelatihan (Google Auth)',
+          email: cleanEmail,
+          phone: '-',
+          avatar: googleData.photoURL,
+        };
+        setUsers(prev => [...prev, targetUser!]);
+      } else {
+        // STRICT REQUIREMENT: Masuk dengan Google HANYA untuk akun pemohon!
+        // Akun non-pemohon (petugas, kasubag, admin, pimpinan) tidak diizinkan masuk via Google.
+        // Hanya admin yang bisa mengubah role.
+        if (targetUser.role !== 'pemohon') {
+          return {
+            success: false,
+            message: `Akses Ditolak: Masuk dengan Google hanya diperuntukkan bagi akun Pemohon. Akun dinas (${targetUser.email}) memiliki peran '${ROLE_PERMISSIONS[targetUser.role].roleName}' dan wajib masuk dengan Email serta Kata Sandi resmi. Perubahan peran hanya dapat dilakukan oleh Admin Sistem.`,
+          };
+        }
+      }
+
+      setCurrentUser(targetUser);
+      setIsAuthenticated(true);
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, 'pemohon');
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}is_auth`, 'true');
+
+      addAuditLogEntry('LOGIN GOOGLE (PEMOHON)', 'User', targetUser.id, `Masuk dengan akun Google (${targetUser.email}) khusus Akun Pemohon.`);
+
+      return { 
+        success: true, 
+        message: `Berhasil masuk dengan akun Google sebagai Pemohon (${targetUser.name})!`, 
+        user: targetUser 
+      };
+    } catch (err: any) {
+      console.error('Google Sign-In failed:', err);
+      return { 
+        success: false, 
+        message: err.message || 'Gagal masuk dengan Google. Pastikan popup tidak diblokir oleh peramban.' 
+      };
+    }
+  };
+
+  const updateUserRole = (userId: string, newRole: UserRole): { success: boolean; message: string } => {
+    if (currentUser.role !== 'admin') {
+      return {
+        success: false,
+        message: 'Akses Ditolak: Selain Administrator Sistem, pengguna lain dilarang mengubah peran (role) akun.',
+      };
+    }
+
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) {
+      return { success: false, message: 'Akun pengguna tidak ditemukan dalam pangkalan data.' };
+    }
+
+    const oldRole = targetUser.role;
+    const updatedUsers = users.map(u => {
+      if (u.id === userId) {
+        return { ...u, role: newRole };
+      }
+      return u;
+    });
+
+    setUsers(updatedUsers);
+
+    if (currentUser.id === userId) {
+      setCurrentUser(prev => ({ ...prev, role: newRole }));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, newRole);
+    }
+
+    addAuditLogEntry(
+      'UPDATE ROLE PENGGUNA (ADMIN)',
+      'User',
+      userId,
+      `Administrator ${currentUser.name} mengubah wewenang ${targetUser.name} (${targetUser.email}) dari ${oldRole.toUpperCase()} menjadi ${newRole.toUpperCase()}.`
+    );
+
+    return {
+      success: true,
+      message: `Peran akun ${targetUser.name} berhasil diubah menjadi ${newRole.toUpperCase()} oleh Administrator.`,
+    };
+  };
+
   const login = (userIdOrRole: string) => {
     const found = users.find(u => u.id === userIdOrRole || u.role === userIdOrRole);
     if (found) {
@@ -278,6 +440,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const switchUser = (userId: string) => {
+    if (isAuthenticated && currentUser.role !== 'admin') {
+      console.warn('Akses Ditolak: Selain Administrator Sistem, pengguna lain dilarang mengubah atau beralih peran (role).');
+      return;
+    }
     const found = users.find(u => u.id === userId);
     if (found) {
       setCurrentUser(found);
@@ -287,6 +453,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const switchRole = (role: UserRole) => {
+    if (isAuthenticated && currentUser.role !== 'admin') {
+      console.warn('Akses Ditolak: Selain Administrator Sistem, pengguna lain dilarang mengubah atau beralih peran (role).');
+      return;
+    }
     const found = users.find(u => u.role === role);
     if (found) {
       setCurrentUser(found);
@@ -851,6 +1021,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}users`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}labs`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}bookings`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}tickets`);
@@ -860,6 +1031,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}kpis`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}user_role`);
 
+    setUsers(INITIAL_USERS);
     setLabs(INITIAL_LABS);
     setBookings(INITIAL_BOOKINGS);
     setTickets(INITIAL_MAINTENANCE_TICKETS);
@@ -881,6 +1053,9 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         permissions,
         login,
         loginWithCredentials,
+        loginWithGoogle,
+        registerUser,
+        updateUserRole,
         logout,
         switchRole,
         switchUser,

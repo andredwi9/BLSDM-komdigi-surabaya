@@ -184,26 +184,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Role Switcher & User Profile */}
       <div className="p-3 border-t border-slate-800/80 bg-[#081323] space-y-2.5">
-        <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 flex items-center justify-between">
-          <span>Ganti Akses Peran</span>
-          <UserCheck className="w-3 h-3 text-slate-400" />
-        </div>
-
-        {/* Role Quick Selector */}
-        <div className="relative">
-          <select
-            value={currentUser.role}
-            onChange={(e) => switchRole(e.target.value as UserRole)}
-            className="w-full bg-slate-800/80 hover:bg-slate-800 text-xs text-slate-200 border border-slate-700/80 rounded-lg px-2.5 py-1.5 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
-          >
-            {roleOptions.map((r) => (
-              <option key={r.role} value={r.role} className="bg-slate-900 text-slate-100">
-                {r.title} ({r.role.toUpperCase()})
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-        </div>
+        {/* Role Switcher (Admin Only) or Locked Role Display (Non-Admin) */}
+        {currentUser.role === 'admin' ? (
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 flex items-center justify-between">
+              <span>Simulasi Peran (Admin)</span>
+              <UserCheck className="w-3 h-3 text-purple-400" />
+            </div>
+            <div className="relative">
+              <select
+                value={currentUser.role}
+                onChange={(e) => switchRole(e.target.value as UserRole)}
+                className="w-full bg-slate-800/80 hover:bg-slate-800 text-xs text-slate-200 border border-purple-500/40 rounded-lg px-2.5 py-1.5 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-purple-500 font-medium"
+              >
+                {roleOptions.map((r) => (
+                  <option key={r.role} value={r.role} className="bg-slate-900 text-slate-100">
+                    {r.title} ({r.role.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
+            </div>
+          </div>
+        ) : (
+          <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span className="font-semibold uppercase tracking-wider">Status Wewenang:</span>
+              <span className="flex items-center gap-1 text-slate-400 font-mono text-[9px] bg-slate-800 px-1.5 py-0.2 rounded border border-slate-700">
+                <Lock className="w-2.5 h-2.5 text-slate-400" />
+                Terkunci
+              </span>
+            </div>
+            <div className="font-bold text-sky-400 flex items-center justify-between">
+              <span>{permissions.roleName}</span>
+              <span className="text-[9px] text-slate-500 font-mono">
+                Level 0{currentUser.role === 'kasubag' ? '2' : currentUser.role === 'petugas' ? '3' : currentUser.role === 'pemohon' ? '4' : '5'}
+              </span>
+            </div>
+            <p className="text-[9px] text-slate-500 leading-tight">
+              Perubahan peran wewenang hanya dapat dilakukan oleh Admin Sistem.
+            </p>
+          </div>
+        )}
 
         {/* Current User Card */}
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/40 border border-slate-800">

@@ -10,27 +10,41 @@ import {
   Sliders, 
   AlertTriangle,
   Building,
-  KeyRound
+  KeyRound,
+  Lock,
+  AlertCircle,
+  UserCog
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
+import { UserRole } from '../types';
+import { ROLE_PERMISSIONS } from '../utils/rbac';
 
 export const SettingsView: React.FC = () => {
-  const { users, currentUser, permissions, switchRole, resetAllData } = useLab();
+  const { users, currentUser, permissions, switchRole, updateUserRole, resetAllData } = useLab();
 
   const [openHour, setOpenHour] = useState('07:30');
   const [closeHour, setCloseHour] = useState('17:30');
   const [bufferMinutes, setBufferMinutes] = useState(15);
   const [noShowBufferMinutes, setNoShowBufferMinutes] = useState(30);
   const [saveAlert, setSaveAlert] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [roleUpdateMsg, setRoleUpdateMsg] = useState<{ text: string; success: boolean } | null>(null);
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
+    setConfigError(null);
     if (!permissions.canConfigureOperationalParams) {
-      alert('Hanya Administrator Sistem yang memiliki hak untuk menyimpan perubahan parameter operasional.');
+      setConfigError('Hanya Administrator Sistem yang memiliki hak untuk menyimpan perubahan parameter operasional.');
       return;
     }
     setSaveAlert(true);
     setTimeout(() => setSaveAlert(false), 2500);
+  };
+
+  const handleRoleChange = (userId: string, newRole: UserRole) => {
+    const res = updateUserRole(userId, newRole);
+    setRoleUpdateMsg({ text: res.message, success: res.success });
+    setTimeout(() => setRoleUpdateMsg(null), 4500);
   };
 
   const roleMatrix = [
@@ -276,12 +290,63 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Registered User Accounts Table */}
+      {/* Registered User Accounts Table (Role Management) */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden text-xs">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <span className="font-bold text-slate-800">Akun Pengguna Terdaftar dalam Sistem SIMLAB</span>
-          <span className="text-[11px] text-slate-500">BLSDM KOMDIGI SURABAYA</span>
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <UserCog className="w-4 h-4 text-purple-700" />
+            <div>
+              <span className="font-bold text-slate-800 text-sm">Manajemen Akun & Hak Akses Pengguna</span>
+              <p className="text-[11px] text-slate-500">
+                {currentUser.role === 'admin' 
+                  ? 'Sebagai Admin Sistem, Anda berhak mengubah peran (role) pengguna secara langsung.' 
+                  : 'Daftar pengguna terdaftar. Pengubahan peran (role) akun hanya dapat dilakukan oleh Admin Sistem.'}
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-mono border border-slate-200 self-start sm:self-auto">
+            Total {users.length} Akun
+          </span>
         </div>
+
+        {/* Feedback Alert for Role Update */}
+        {roleUpdateMsg && (
+          <div className={`p-3 m-4 mb-0 rounded-xl border text-xs flex items-center gap-2 ${
+            roleUpdateMsg.success 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}>
+            {roleUpdateMsg.success ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="font-medium">{roleUpdateMsg.text}</span>
+          </div>
+        )}
+
+        {/* RBAC Info Banner */}
+        {currentUser.role !== 'admin' ? (
+          <div className="mx-4 my-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-xs flex items-start gap-2.5">
+            <Lock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-slate-800">Hak Pengubahan Peran Terkunci:</strong>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Anda sedang masuk sebagai <strong>{permissions.roleName}</strong>. Berdasarkan SOP Keamanan SIMLAB KOMDIGI, selain Administrator Sistem tidak ada pengguna lain yang dapat mengubah peran (role) akun. Pendaftaran mandiri (Email & Google) secara default terdaftar sebagai <strong>Pemohon</strong>.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mx-4 my-3 p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 text-xs flex items-start gap-2.5">
+            <Shield className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-purple-950 font-bold">Wewenang Administrator Sistem Aktif:</strong>
+              <p className="text-[11px] text-purple-800 mt-0.5">
+                Anda memiliki hak penuh untuk menetapkan atau mengubah peran akun (Pemohon, Petugas Lab, Kasubag TU / Approval, Pimpinan Balai, atau Admin). Setiap perubahan wewenang tercatat dalam Berita Acara Audit Log.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -289,42 +354,84 @@ export const SettingsView: React.FC = () => {
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                 <th className="py-2.5 px-4">Nama Lengkap & NIP</th>
                 <th className="py-2.5 px-4">Unit Kerja / Satuan</th>
-                <th className="py-2.5 px-4">Peran (Role)</th>
+                <th className="py-2.5 px-4">Peran Saat Ini (Role)</th>
                 <th className="py-2.5 px-4">Kontak / Email</th>
-                <th className="py-2.5 px-4 text-right">Aksi</th>
+                <th className="py-2.5 px-4 text-right">
+                  {currentUser.role === 'admin' ? 'Ubah Peran (Role) / Aksi' : 'Status Wewenang'}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {users.map((u) => {
                 const isCurrent = u.id === currentUser.id;
+                const roleConfig = ROLE_PERMISSIONS[u.role];
                 return (
-                  <tr key={u.id} className={`hover:bg-slate-50 ${isCurrent ? 'bg-blue-50/30' : ''}`}>
+                  <tr key={u.id} className={`hover:bg-slate-50 ${isCurrent ? 'bg-blue-50/40' : ''}`}>
                     <td className="py-2.5 px-4">
-                      <strong className="text-slate-900">{u.name}</strong>
-                      <span className="text-[10px] text-slate-400 block font-mono">NIP: {u.nip}</span>
+                      <div className="flex items-center gap-2">
+                        <strong className="text-slate-900">{u.name}</strong>
+                        {isCurrent && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-semibold">
+                            (Akun Anda)
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 block font-mono">NIP: {u.nip} · User: {u.username}</span>
                     </td>
                     <td className="py-2.5 px-4 text-slate-700">{u.unit}</td>
                     <td className="py-2.5 px-4">
-                      <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                        {u.role}
-                      </span>
+                      {currentUser.role === 'admin' ? (
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                            className="bg-white border border-purple-300 hover:border-purple-400 text-purple-900 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-purple-500 cursor-pointer shadow-xs"
+                            title="Ubah peran pengguna ini (Hanya Admin)"
+                          >
+                            <option value="pemohon">Pemohon / Instruktur</option>
+                            <option value="petugas">Petugas Lab (Operasional)</option>
+                            <option value="kasubag">Kasubag TU & Sarpras (Approval)</option>
+                            <option value="pimpinan">Pimpinan Balai (Executive Viewer)</option>
+                            <option value="admin">Admin Sistem (Full Access)</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <span className={`font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded ${roleConfig?.badgeBg || 'bg-slate-100'} ${roleConfig?.badgeText || 'text-slate-800'}`}>
+                            {u.role}
+                          </span>
+                          <span title="Terkunci: Hanya Admin yang dapat mengubah peran">
+                            <Lock className="w-3 h-3 text-slate-400" />
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-2.5 px-4 font-mono text-slate-600 text-[11px]">
                       {u.email}
                       <span className="block text-[10px] text-slate-400">{u.phone}</span>
                     </td>
                     <td className="py-2.5 px-4 text-right">
-                      <button
-                        onClick={() => switchRole(u.role)}
-                        disabled={isCurrent}
-                        className={`px-3 py-1 rounded text-[11px] font-semibold transition-colors ${
-                          isCurrent
-                            ? 'bg-slate-100 text-slate-400 cursor-default'
-                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-                        }`}
-                      >
-                        {isCurrent ? 'Sedang Digunakan' : 'Beralih ke Akun Ini'}
-                      </button>
+                      {currentUser.role === 'admin' ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => switchRole(u.role)}
+                            disabled={isCurrent}
+                            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
+                              isCurrent
+                                ? 'bg-slate-100 text-slate-400 cursor-default'
+                                : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+                            }`}
+                            title={isCurrent ? 'Sesi sedang digunakan' : `Beralih sesi sebagai ${u.name}`}
+                          >
+                            {isCurrent ? 'Sesi Aktif' : 'Uji Sesi Akun'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 italic">
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          Hanya Admin
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );

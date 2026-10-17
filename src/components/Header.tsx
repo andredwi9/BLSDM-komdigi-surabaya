@@ -295,29 +295,39 @@ export const Header: React.FC<HeaderProps> = ({
                 </ul>
               </div>
 
-              {/* Quick switch persona selector */}
-              <div className="space-y-1.5 mb-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Ganti Akun Cepat:</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {users.map(u => (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        switchRole(u.role);
-                        setShowUserMenu(false);
-                      }}
-                      className={`p-1.5 rounded-lg border text-[10px] text-left truncate transition-colors ${
-                        u.id === currentUser.id 
-                          ? 'bg-blue-50 border-blue-300 text-blue-800 font-bold' 
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="block font-bold">{u.role.toUpperCase()}</span>
-                      <span className="text-slate-500 truncate block">{u.name.split(',')[0]}</span>
-                    </button>
-                  ))}
+              {/* Quick switch persona selector (Admin Only) or Locked Notification (Non-Admin) */}
+              {currentUser.role === 'admin' ? (
+                <div className="space-y-1.5 mb-3">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Simulasi Akun (Khusus Admin):</span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          switchRole(u.role);
+                          setShowUserMenu(false);
+                        }}
+                        className={`p-1.5 rounded-lg border text-[10px] text-left truncate transition-colors cursor-pointer ${
+                          u.id === currentUser.id 
+                            ? 'bg-blue-50 border-blue-300 text-blue-800 font-bold' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="block font-bold">{u.role.toUpperCase()}</span>
+                        <span className="text-slate-500 truncate block">{u.name.split(',')[0]}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl mb-3 text-[11px] text-slate-600 flex items-start gap-2">
+                  <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block text-slate-800">Wewenang Akun Dikelola Admin</span>
+                    <span className="text-[10px] text-slate-500">Peran akun Anda terkunci pada mode <strong>{permissions.roleName}</strong>. Pengubahan wewenang hanya dapat dilakukan oleh Administrator Sistem.</span>
+                  </div>
+                </div>
+              )}
 
               {/* Logout button */}
               <button

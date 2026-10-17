@@ -85,6 +85,27 @@ export const signInWithGoogleCalendar = async (): Promise<{ user: FirebaseUser; 
 };
 
 /**
+ * Sign in with Google strictly for Pemohon account authentication
+ */
+export const signInWithGoogleAccount = async (): Promise<{
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  uid: string;
+}> => {
+  const googleProvider = new GoogleAuthProvider();
+  googleProvider.addScope('email');
+  googleProvider.addScope('profile');
+  const result = await signInWithPopup(auth, googleProvider);
+  return {
+    email: result.user.email || '',
+    displayName: result.user.displayName || 'Pemohon Google',
+    photoURL: result.user.photoURL || undefined,
+    uid: result.user.uid,
+  };
+};
+
+/**
  * Get current cached access token in memory
  */
 export const getCalendarAccessToken = (): string | null => {
