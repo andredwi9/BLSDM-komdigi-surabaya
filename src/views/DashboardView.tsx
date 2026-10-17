@@ -27,12 +27,14 @@ interface DashboardViewProps {
   onOpenBookingModal: (labId?: string) => void;
   onOpenQRModal: (bookingId?: string) => void;
   onOpenDamageModal: (labId?: string) => void;
+  onOpenSmartBooking?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenBookingModal,
   onOpenQRModal,
   onOpenDamageModal,
+  onOpenSmartBooking,
 }) => {
   const { 
     labs, 
@@ -177,6 +179,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Direct Quick Action CTAs */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {permissions.canCreateBooking && onOpenSmartBooking && (
+              <button
+                onClick={() => onOpenSmartBooking()}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-600/90 hover:bg-blue-600 rounded-lg border border-blue-400/40 shadow-sm transition-all cursor-pointer"
+                title="Rekomendasi Cerdas AI untuk Lab & Slot Waktu Bebas Bentrok"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>AI Smart Booking</span>
+              </button>
+            )}
             {permissions.canCreateBooking && (
               <button
                 onClick={() => onOpenBookingModal()}

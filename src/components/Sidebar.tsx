@@ -22,9 +22,12 @@ interface SidebarProps {
   onOpenBookingModal?: () => void;
   onOpenQRModal?: () => void;
   onOpenDamageModal?: () => void;
+  onOpenSmartBooking?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = () => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  onOpenSmartBooking,
+}) => {
   const { 
     activeView, 
     setActiveView, 
@@ -160,6 +163,24 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           );
         })}
       </nav>
+
+      {/* Quick Action: Smart Booking */}
+      {permissions.canCreateBooking && onOpenSmartBooking && (
+        <div className="px-3 pb-2 pt-1">
+          <button
+            onClick={onOpenSmartBooking}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-blue-900/90 to-indigo-950/90 hover:from-blue-800 hover:to-indigo-900 border border-blue-500/40 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 group-hover:rotate-12 transition-transform" />
+              <span>Smart Booking AI</span>
+            </div>
+            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.2 rounded font-mono">
+              Auto-Slot
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Role Switcher & User Profile */}
       <div className="p-3 border-t border-slate-800/80 bg-[#081323] space-y-2.5">

@@ -24,6 +24,7 @@ interface HeaderProps {
   onOpenQRModal: () => void;
   onOpenDamageModal: () => void;
   onOpenKPICustomizer: () => void;
+  onOpenSmartBooking?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenQRModal,
   onOpenDamageModal,
   onOpenKPICustomizer,
+  onOpenSmartBooking,
 }) => {
   const { 
     activeView, 
@@ -124,6 +126,18 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <QrCode className="w-3.5 h-3.5 text-slate-700" />
             <span className="hidden sm:inline">QR Check-In/Out</span>
+          </button>
+        )}
+
+        {/* AI Smart Booking CTA */}
+        {permissions.canCreateBooking && onOpenSmartBooking && (
+          <button
+            onClick={onOpenSmartBooking}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 rounded-lg shadow-sm border border-blue-400/30 transition-all cursor-pointer"
+            title="Rekomendasi Cerdas AI untuk Lab & Slot Waktu Bebas Bentrok"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">AI Smart Booking</span>
           </button>
         )}
 

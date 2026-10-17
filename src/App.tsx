@@ -13,7 +13,9 @@ import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
 
 // Modals
-import { BookingModal } from './components/modals/BookingModal';
+import { BookingModal, BookingInitialValues } from './components/modals/BookingModal';
+import { SmartBookingModal } from './components/modals/SmartBookingModal';
+import { SmartBookingRecommendation, SmartSlotSuggestion } from './services/smartBookingEngine';
 import { QRCheckInModal } from './components/modals/QRCheckInModal';
 import { ReportDamageModal } from './components/modals/ReportDamageModal';
 import { InspectionModal } from './components/modals/InspectionModal';
@@ -31,6 +33,9 @@ const AppContent: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [bookingPreselectedLabId, setBookingPreselectedLabId] = useState<string | undefined>();
   const [bookingPreselectedDate, setBookingPreselectedDate] = useState<string | undefined>();
+  const [bookingInitialValues, setBookingInitialValues] = useState<BookingInitialValues | undefined>(undefined);
+
+  const [isSmartBookingOpen, setIsSmartBookingOpen] = useState(false);
 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrTargetBookingId, setQrTargetBookingId] = useState<string | undefined>();
@@ -45,8 +50,32 @@ const AppContent: React.FC = () => {
 
   // Modal open helpers
   const handleOpenBooking = (labId?: string, date?: string) => {
+    setBookingInitialValues(undefined);
     setBookingPreselectedLabId(labId);
     setBookingPreselectedDate(date);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleOpenSmartBooking = () => {
+    setIsSmartBookingOpen(true);
+  };
+
+  const handleApplySmartRecommendation = (rec: SmartBookingRecommendation, chosenSlot?: SmartSlotSuggestion) => {
+    const slot = chosenSlot || rec.suggestedSlot;
+    setBookingInitialValues({
+      labId: rec.lab.id,
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      participants: rec.estimatedParticipants,
+      activityType: rec.suggestedActivityType,
+      activityTitle: rec.suggestedActivityTitle,
+      requiredFacilities: rec.suggestedFacilities,
+      notes: `[Rekomendasi AI SIMLAB - Skor: ${rec.matchScore}%]\n- Rekomendasi Riwayat: ${rec.historyMatchReason}\n- Rekomendasi Jadwal: ${rec.scheduleMatchReason}\n${rec.notes}`,
+    });
+    setBookingPreselectedLabId(rec.lab.id);
+    setBookingPreselectedDate(slot.date);
+    setIsSmartBookingOpen(false);
     setIsBookingModalOpen(true);
   };
 
@@ -68,7 +97,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       {/* Sidebar (Left) */}
-      <Sidebar />
+      <Sidebar onOpenSmartBooking={handleOpenSmartBooking} />
 
       {/* Main Content Area (Right) */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
@@ -78,6 +107,7 @@ const AppContent: React.FC = () => {
           onOpenQRModal={() => handleOpenQR()}
           onOpenDamageModal={() => handleOpenDamage()}
           onOpenKPICustomizer={() => setIsKPICustomizerOpen(true)}
+          onOpenSmartBooking={handleOpenSmartBooking}
         />
 
         {/* Viewport Content */}
@@ -87,6 +117,7 @@ const AppContent: React.FC = () => {
               onOpenBookingModal={handleOpenBooking}
               onOpenQRModal={handleOpenQR}
               onOpenDamageModal={handleOpenDamage}
+              onOpenSmartBooking={handleOpenSmartBooking}
             />
           )}
 
@@ -94,6 +125,7 @@ const AppContent: React.FC = () => {
             <BookingView
               onOpenBookingModal={handleOpenBooking}
               onOpenQRModal={handleOpenQR}
+              onOpenSmartBooking={handleOpenSmartBooking}
             />
           )}
 
@@ -101,6 +133,7 @@ const AppContent: React.FC = () => {
             <CalendarView
               onOpenBookingModal={handleOpenBooking}
               onOpenQRModal={handleOpenQR}
+              onOpenSmartBooking={handleOpenSmartBooking}
             />
           )}
 
@@ -132,9 +165,20 @@ const AppContent: React.FC = () => {
       {/* Interactive Global Modals */}
       <BookingModal
         isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          setBookingInitialValues(undefined);
+        }}
         preselectedLabId={bookingPreselectedLabId}
         preselectedDate={bookingPreselectedDate}
+        initialValues={bookingInitialValues}
+        onOpenSmartBooking={handleOpenSmartBooking}
+      />
+
+      <SmartBookingModal
+        isOpen={isSmartBookingOpen}
+        onClose={() => setIsSmartBookingOpen(false)}
+        onApplyRecommendation={handleApplySmartRecommendation}
       />
 
       <QRCheckInModal

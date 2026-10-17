@@ -31,15 +31,18 @@ import {
   subscribeToCalendarAuth 
 } from '../services/googleCalendarService';
 import { PrintableBeritaAcara } from '../components/reports/PrintableBeritaAcara';
+import { analyzeUserBookingHistory } from '../services/smartBookingEngine';
 
 interface BookingViewProps {
   onOpenBookingModal: (labId?: string) => void;
   onOpenQRModal: (bookingId?: string) => void;
+  onOpenSmartBooking?: () => void;
 }
 
 export const BookingView: React.FC<BookingViewProps> = ({
   onOpenBookingModal,
   onOpenQRModal,
+  onOpenSmartBooking,
 }) => {
   const { 
     bookings, 
@@ -56,6 +59,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [scopeTab, setScopeTab] = useState<'all' | 'mine'>(currentUser.role === 'pemohon' ? 'mine' : 'all');
+
+  // AI User History Analysis
+  const userHistory = React.useMemo(() => analyzeUserBookingHistory(currentUser, bookings), [currentUser, bookings]);
 
   // Google Calendar Integration states
   const [hasGoogleAuth, setHasGoogleAuth] = useState(false);
@@ -289,29 +295,76 @@ export const BookingView: React.FC<BookingViewProps> = ({
           </p>
         </div>
 
-        {/* Create Booking Button (Disabled for Kasubag & Pimpinan) */}
-        {permissions.canCreateBooking ? (
-          <button
-            onClick={() => onOpenBookingModal()}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-xl shadow-sm shadow-blue-700/20 transition-all shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Buat Pengajuan Booking Baru</span>
-          </button>
-        ) : (
-          <div className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${
-            currentUser.role === 'kasubag'
-              ? 'bg-blue-50 text-blue-800 border-blue-200'
-              : 'bg-slate-100 text-slate-500 border-slate-200'
-          }`}>
-            <span>
-              {currentUser.role === 'kasubag' 
-                ? 'Pejabat Penyetuju (Bebas Konflik Kepentingan)' 
-                : 'Mode Monitoring Eksekutif'}
-            </span>
-          </div>
-        )}
+        {/* Action buttons: AI Smart Booking + Manual Booking */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {permissions.canCreateBooking && onOpenSmartBooking && (
+            <button
+              onClick={() => onOpenSmartBooking()}
+              className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#001F3F] hover:from-blue-900 hover:to-indigo-900 rounded-xl shadow-md border border-blue-400/40 transition-all cursor-pointer group"
+              title="Rekomendasi Cerdas AI untuk Lab & Slot Waktu Bebas Bentrok"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 group-hover:rotate-12 transition-transform" />
+              <span>AI Smart Booking</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                Zero Conflict
+              </span>
+            </button>
+          )}
+
+          {/* Create Booking Button (Disabled for Kasubag & Pimpinan) */}
+          {permissions.canCreateBooking ? (
+            <button
+              onClick={() => onOpenBookingModal()}
+              className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-xl shadow-sm shadow-blue-700/20 transition-all shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Pengajuan Manual</span>
+            </button>
+          ) : (
+            <div className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${
+              currentUser.role === 'kasubag'
+                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                : 'bg-slate-100 text-slate-500 border-slate-200'
+            }`}>
+              <span>
+                {currentUser.role === 'kasubag' 
+                  ? 'Pejabat Penyetuju (Bebas Konflik Kepentingan)' 
+                  : 'Mode Monitoring Eksekutif'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* AI Smart Suggestion Prompt Card */}
+      {permissions.canCreateBooking && onOpenSmartBooking && (
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-white rounded-2xl p-4 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm shadow-blue-600/30">
+              <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 text-xs">AI Smart Recommender — Analisis Riwayat & Jadwal Real-time</span>
+                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-blue-100 text-blue-800">
+                  {userHistory.totalBookings > 0 ? `${userHistory.totalBookings} Transaksi Histori` : 'Profil Pemohon Baru'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                Berdasarkan riwayat peminjaman unit <strong>{currentUser.unit}</strong>, laboratorium <strong>{userHistory.mostFrequentLabName}</strong> memiliki kesesuaian fasilitas tertinggi ({userHistory.avgParticipants} peserta, sesi {userHistory.preferredTimeOfDay === 'morning' ? 'Pagi 08:30' : 'Siang 13:00'}). AI telah menyaring slot waktu yang 100% bebas dari bentrok jadwal & pemeliharaan teknis.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onOpenSmartBooking()}
+            className="px-4 py-2 text-xs font-bold text-white bg-blue-700 hover:bg-blue-800 rounded-xl shadow-sm transition-all flex items-center gap-2 shrink-0 cursor-pointer self-start md:self-auto"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Cari Slot & Lab Cerdas</span>
+          </button>
+        </div>
+      )}
 
       {/* Scope Switcher: All Bookings vs My Bookings */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3 text-xs">

@@ -16,7 +16,8 @@ import {
   Layers,
   MapPin,
   User,
-  Users
+  Users,
+  Sparkles
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
 import { Booking, GoogleCalendarEvent } from '../types';
@@ -33,11 +34,13 @@ import { User as FirebaseUser } from 'firebase/auth';
 interface CalendarViewProps {
   onOpenBookingModal: (labId?: string, date?: string) => void;
   onOpenQRModal: (bookingId?: string) => void;
+  onOpenSmartBooking?: () => void;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   onOpenBookingModal,
   onOpenQRModal,
+  onOpenSmartBooking,
 }) => {
   const { labs, bookings, permissions, updateBookingCalendarSync } = useLab();
   const [selectedLabId, setSelectedLabId] = useState<string>('all');
@@ -356,6 +359,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
+          {permissions.canCreateBooking && onOpenSmartBooking && (
+            <button
+              onClick={() => onOpenSmartBooking()}
+              className="flex items-center gap-1.5 px-3 py-1.5 font-bold text-white bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 rounded-lg border border-blue-400/30 shadow-xs cursor-pointer transition-colors"
+              title="Rekomendasi Cerdas AI untuk Lab & Slot Waktu Bebas Bentrok"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>AI Smart Slot</span>
+            </button>
+          )}
 
           {permissions.canCreateBooking ? (
             <button

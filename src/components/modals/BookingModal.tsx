@@ -3,11 +3,25 @@ import { X, CheckCircle2, AlertTriangle, AlertCircle, Sparkles, Clock, Users, Bu
 import { useLab } from '../../context/LabContext';
 import { ActivityType } from '../../types';
 
+export interface BookingInitialValues {
+  labId?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  participants?: number;
+  activityType?: ActivityType;
+  activityTitle?: string;
+  requiredFacilities?: string[];
+  notes?: string;
+}
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedLabId?: string;
   preselectedDate?: string;
+  initialValues?: BookingInitialValues;
+  onOpenSmartBooking?: () => void;
 }
 
 export const BookingModal: React.FC<BookingModalProps> = ({
@@ -15,6 +29,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   preselectedLabId,
   preselectedDate,
+  initialValues,
+  onOpenSmartBooking,
 }) => {
   const { labs, currentUser, permissions, createBooking, checkBookingConflict } = useLab();
 
@@ -24,28 +40,40 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     return d.toISOString().split('T')[0];
   };
 
-  const [labId, setLabId] = useState<string>(preselectedLabId || labs[0]?.id || '');
-  const [date, setDate] = useState<string>(preselectedDate || getTomorrow());
-  const [startTime, setStartTime] = useState<string>('08:30');
-  const [endTime, setEndTime] = useState<string>('12:30');
-  const [participants, setParticipants] = useState<number>(25);
-  const [activityType, setActivityType] = useState<ActivityType>('pelatihan');
-  const [activityTitle, setActivityTitle] = useState<string>('');
+  const [labId, setLabId] = useState<string>(initialValues?.labId || preselectedLabId || labs[0]?.id || '');
+  const [date, setDate] = useState<string>(initialValues?.date || preselectedDate || getTomorrow());
+  const [startTime, setStartTime] = useState<string>(initialValues?.startTime || '08:30');
+  const [endTime, setEndTime] = useState<string>(initialValues?.endTime || '12:30');
+  const [participants, setParticipants] = useState<number>(initialValues?.participants || 25);
+  const [activityType, setActivityType] = useState<ActivityType>(initialValues?.activityType || 'pelatihan');
+  const [activityTitle, setActivityTitle] = useState<string>(initialValues?.activityTitle || '');
   const [userUnit, setUserUnit] = useState<string>(currentUser.unit);
   const [userPhone, setUserPhone] = useState<string>(currentUser.phone);
-  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
-  const [notes, setNotes] = useState<string>('');
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>(initialValues?.requiredFacilities || []);
+  const [notes, setNotes] = useState<string>(initialValues?.notes || '');
   const [submitFeedback, setSubmitFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
 
-  // Sync preselected and current user
+  // Sync preselected and initialValues
   useEffect(() => {
-    if (preselectedLabId) setLabId(preselectedLabId);
-    if (preselectedDate) setDate(preselectedDate);
+    if (initialValues) {
+      if (initialValues.labId) setLabId(initialValues.labId);
+      if (initialValues.date) setDate(initialValues.date);
+      if (initialValues.startTime) setStartTime(initialValues.startTime);
+      if (initialValues.endTime) setEndTime(initialValues.endTime);
+      if (initialValues.participants) setParticipants(initialValues.participants);
+      if (initialValues.activityType) setActivityType(initialValues.activityType);
+      if (initialValues.activityTitle) setActivityTitle(initialValues.activityTitle);
+      if (initialValues.requiredFacilities) setSelectedFacilities(initialValues.requiredFacilities);
+      if (initialValues.notes) setNotes(initialValues.notes);
+    } else {
+      if (preselectedLabId) setLabId(preselectedLabId);
+      if (preselectedDate) setDate(preselectedDate);
+    }
     if (isOpen) {
       setUserUnit(currentUser.unit);
       setUserPhone(currentUser.phone);
     }
-  }, [preselectedLabId, preselectedDate, currentUser, isOpen]);
+  }, [preselectedLabId, preselectedDate, initialValues, currentUser, isOpen]);
 
   const selectedLab = labs.find(l => l.id === labId);
 
@@ -166,6 +194,52 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     : 'Peran akun Anda saat ini dibatasi ke mode peninjau dan tidak dapat membuat pengajuan booking laboratorium.'}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* AI Smart Booking Recommender Shortcut */}
+          {onOpenSmartBooking && permissions.canCreateBooking && (
+            <div className="bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#001F3F] text-white p-3.5 rounded-xl border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 mt-0.5 text-blue-300">
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-xs font-bold text-white">Butuh Rekomendasi Ruang & Waktu Otomatis?</strong>
+                    <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.2 rounded">
+                      Zero Conflict
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                    Gunakan <strong>AI Smart Booking</strong> untuk menganalisis riwayat pelatihan unit Anda dan mencarikan slot waktu kosong dengan spesifikasi perangkat yang paling pas.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSmartBooking();
+                }}
+                className="px-3.5 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-sm transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Pilih Rekomendasi AI</span>
+              </button>
+            </div>
+          )}
+
+          {/* AI Auto-fill badge if applied */}
+          {initialValues && initialValues.notes && initialValues.notes.includes('[Rekomendasi AI SIMLAB') && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-blue-900 text-xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <span>Formulir telah diisi otomatis berdasarkan <strong>Rekomendasi Cerdas AI</strong> (100% Bebas Bentrok).</span>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-blue-200/80 text-blue-800 px-2 py-0.5 rounded">
+                AI Autofilled
+              </span>
             </div>
           )}
 
