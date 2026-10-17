@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, QrCode, CheckCircle2, LogIn, LogOut, Camera, AlertCircle, Sparkles } from 'lucide-react';
 import { useLab } from '../../context/LabContext';
+import { BookingCheckInQRCode } from '../booking/BookingCheckInQRCode';
 
 interface QRCheckInModalProps {
   isOpen: boolean;
@@ -21,8 +22,17 @@ export const QRCheckInModal: React.FC<QRCheckInModalProps> = ({
   const activeBookings = bookings.filter(b => b.status === 'approved' || b.checkInTime);
   const [selectedId, setSelectedId] = useState<string>(targetBookingId || activeBookings[0]?.id || '');
   const [actualAttendees, setActualAttendees] = useState<number>(27);
-  const [activeTab, setActiveTab] = useState<'scan' | 'qrcode'>('scan');
+  const [activeTab, setActiveTab] = useState<'scan' | 'qrcode'>(targetBookingId ? 'qrcode' : 'scan');
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (targetBookingId) {
+      setSelectedId(targetBookingId);
+      setActiveTab('qrcode');
+      const b = bookings.find(item => item.id === targetBookingId);
+      if (b) setActualAttendees(b.actualParticipants || b.participants);
+    }
+  }, [targetBookingId, bookings]);
 
   const currentBooking = bookings.find(b => b.id === selectedId) || activeBookings[0];
 
@@ -189,58 +199,25 @@ export const QRCheckInModal: React.FC<QRCheckInModalProps> = ({
               </div>
             </div>
           ) : (
-            /* QR Code Display Tab */
-            <div className="text-center py-2 space-y-3">
-              <div className="inline-block p-4 bg-white border-2 border-slate-900 rounded-2xl shadow-md">
-                {/* SVG Stylized QR code */}
-                <svg className="w-48 h-48 mx-auto" viewBox="0 0 120 120" fill="none">
-                  {/* Outer border & finder patterns */}
-                  <rect x="0" y="0" width="120" height="120" fill="white" />
-                  {/* Top-Left Finder */}
-                  <rect x="10" y="10" width="30" height="30" rx="4" fill="#0B192C" />
-                  <rect x="15" y="15" width="20" height="20" rx="2" fill="white" />
-                  <rect x="20" y="20" width="10" height="10" rx="1" fill="#0B192C" />
-
-                  {/* Top-Right Finder */}
-                  <rect x="80" y="10" width="30" height="30" rx="4" fill="#0B192C" />
-                  <rect x="85" y="15" width="20" height="20" rx="2" fill="white" />
-                  <rect x="90" y="20" width="10" height="10" rx="1" fill="#0B192C" />
-
-                  {/* Bottom-Left Finder */}
-                  <rect x="10" y="80" width="30" height="30" rx="4" fill="#0B192C" />
-                  <rect x="15" y="85" width="20" height="20" rx="2" fill="white" />
-                  <rect x="20" y="90" width="10" height="10" rx="1" fill="#0B192C" />
-
-                  {/* Data modules simulation */}
-                  <rect x="48" y="12" width="6" height="6" fill="#0B192C" />
-                  <rect x="58" y="16" width="6" height="6" fill="#0B192C" />
-                  <rect x="66" y="24" width="6" height="6" fill="#0B192C" />
-                  <rect x="48" y="28" width="6" height="6" fill="#0B192C" />
-
-                  <rect x="14" y="48" width="6" height="6" fill="#0B192C" />
-                  <rect x="26" y="56" width="6" height="6" fill="#0B192C" />
-                  <rect x="36" y="48" width="6" height="6" fill="#0B192C" />
-
-                  <rect x="48" y="48" width="24" height="24" rx="4" fill="#1D4ED8" />
-                  <text x="60" y="64" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">KOMDIGI</text>
-
-                  <rect x="80" y="48" width="6" height="6" fill="#0B192C" />
-                  <rect x="96" y="58" width="6" height="6" fill="#0B192C" />
-                  <rect x="88" y="66" width="6" height="6" fill="#0B192C" />
-
-                  <rect x="52" y="82" width="6" height="6" fill="#0B192C" />
-                  <rect x="64" y="90" width="6" height="6" fill="#0B192C" />
-                  <rect x="76" y="82" width="6" height="6" fill="#0B192C" />
-                  <rect x="88" y="92" width="6" height="6" fill="#0B192C" />
-                  <rect x="100" y="86" width="6" height="6" fill="#0B192C" />
-                </svg>
-                <div className="mt-2 text-[10px] font-mono text-slate-500">
-                  CODE: {currentBooking?.bookingCode || 'LAB-KOMDIGI-ID'}
+            /* QR Code Display Tab using qrcode.react */
+            <div className="py-1">
+              {currentBooking ? (
+                <BookingCheckInQRCode
+                  booking={currentBooking}
+                  size={200}
+                  format="canvas"
+                  includeDetails={true}
+                  includeActions={true}
+                  onCheckInSuccess={() => {
+                    setMessage(`Check-in berhasil tercatat untuk ${currentBooking.bookingCode}!`);
+                    setTimeout(() => setMessage(null), 3000);
+                  }}
+                />
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  Tidak ada data booking kegiatan terkonfirmasi untuk ditampilkan.
                 </div>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Cetak atau tampilkan QR code ini di pintu masuk lab agar instruktur dan peserta dapat melakukan check-in mandiri.
-              </p>
+              )}
             </div>
           )}
 

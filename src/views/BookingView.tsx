@@ -32,6 +32,7 @@ import {
 } from '../services/googleCalendarService';
 import { PrintableBeritaAcara } from '../components/reports/PrintableBeritaAcara';
 import { analyzeUserBookingHistory } from '../services/smartBookingEngine';
+import { BookingCheckInQRCode } from '../components/booking/BookingCheckInQRCode';
 
 interface BookingViewProps {
   onOpenBookingModal: (labId?: string) => void;
@@ -58,6 +59,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [qrPassBooking, setQrPassBooking] = useState<Booking | null>(null);
   const [scopeTab, setScopeTab] = useState<'all' | 'mine'>(currentUser.role === 'pemohon' ? 'mine' : 'all');
 
   // AI User History Analysis
@@ -569,12 +571,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           {/* 3. QR Presensi Check-In */}
                           {b.status === 'approved' && (permissions.canCheckInQR || isMyBooking(b)) && (
                             <button
-                              onClick={() => onOpenQRModal(b.id)}
+                              onClick={() => setQrPassBooking(b)}
                               className="px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                              title="Tampilkan QR Presensi"
+                              title="Tampilkan QR Presensi Check-In Resmi (qrcode.react)"
                             >
                               <QrCode className="w-3 h-3" />
-                              <span>QR</span>
+                              <span>QR Pass</span>
                             </button>
                           )}
 
@@ -918,17 +920,30 @@ export const BookingView: React.FC<BookingViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-              {['approved', 'completed'].includes(selectedBooking.status) ? (
-                <button
-                  type="button"
-                  onClick={() => setBeritaAcaraBooking(selectedBooking)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Cetak / Unduh Berita Acara (PDF)</span>
-                </button>
-              ) : <div />}
+            <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {['approved', 'completed'].includes(selectedBooking.status) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setBeritaAcaraBooking(selectedBooking)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Berita Acara (PDF)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQrPassBooking(selectedBooking)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                      <span>QR Pass Presensi</span>
+                    </button>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => setSelectedBooking(null)}
                 className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
@@ -936,6 +951,28 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unique QR Code Check-In Modal using qrcode.react */}
+      {qrPassBooking && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full relative animate-in fade-in zoom-in-95">
+            <button
+              type="button"
+              onClick={() => setQrPassBooking(null)}
+              className="absolute -top-10 right-0 text-white/90 hover:text-white flex items-center gap-1.5 text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 border border-slate-700 px-3 py-1 rounded-full cursor-pointer shadow-md"
+            >
+              <span>✕ Tutup QR Pass</span>
+            </button>
+            <BookingCheckInQRCode
+              booking={qrPassBooking}
+              size={210}
+              onCheckInSuccess={() => {
+                setTimeout(() => setQrPassBooking(null), 1500);
+              }}
+            />
           </div>
         </div>
       )}
