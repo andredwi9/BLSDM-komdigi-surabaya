@@ -14,10 +14,13 @@ import {
   Layers,
   Settings2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  GitCompare,
+  ArrowLeftRight
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
 import { Laboratory, LabStatus } from '../types';
+import { LabComparisonView } from '../components/laboratories/LabComparisonView';
 
 interface LaboratoriesViewProps {
   onOpenBookingModal: (labId?: string) => void;
@@ -34,6 +37,23 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Side-by-side comparison states
+  const [viewMode, setViewMode] = useState<'catalog' | 'compare'>('catalog');
+  const [compareLabIdA, setCompareLabIdA] = useState<string>('lab-1');
+  const [compareLabIdB, setCompareLabIdB] = useState<string>('lab-4');
+
+  const handleStartComparison = (labId?: string) => {
+    if (labId) {
+      setCompareLabIdA(labId);
+      const otherLab = labs.find(l => l.id !== labId);
+      if (otherLab) {
+        setCompareLabIdB(otherLab.id);
+      }
+    }
+    setViewMode('compare');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Form states for Add/Edit
   const [labCode, setLabCode] = useState('');
@@ -211,25 +231,53 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            {[
-              { id: 'all', label: 'Semua Status' },
-              { id: 'tersedia', label: 'Tersedia' },
-              { id: 'digunakan', label: 'Digunakan' },
-              { id: 'maintenance', label: 'Maintenance' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
-                  statusFilter === tab.id ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Mode Switcher: Katalog vs Komparasi */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setViewMode('catalog')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
+                viewMode === 'catalog'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building className="w-3.5 h-3.5 text-blue-600" />
+              <span>Katalog Kartu</span>
+            </button>
+            <button
+              onClick={() => handleStartComparison()}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
+                viewMode === 'compare'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <GitCompare className="w-3.5 h-3.5" />
+              <span>Komparasi Side-by-Side</span>
+            </button>
           </div>
+
+          {/* Filter Status (Only in catalog mode) */}
+          {viewMode === 'catalog' && (
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
+              {[
+                { id: 'all', label: 'Semua Status' },
+                { id: 'tersedia', label: 'Tersedia' },
+                { id: 'digunakan', label: 'Digunakan' },
+                { id: 'maintenance', label: 'Maintenance' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
+                    statusFilter === tab.id ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Action: Tambah Lab Baru (Khusus Admin Sistem) */}
           {permissions.canManageMasterLab ? (
@@ -248,8 +296,19 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
         </div>
       </div>
 
-      {/* Lab Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Main Content: Comparison View OR Catalog Grid */}
+      {viewMode === 'compare' ? (
+        <LabComparisonView
+          labs={labs}
+          initialLabIdA={compareLabIdA}
+          initialLabIdB={compareLabIdB}
+          onOpenBookingModal={onOpenBookingModal}
+          onOpenDamageModal={onOpenDamageModal}
+          onClose={() => setViewMode('catalog')}
+        />
+      ) : (
+        /* Lab Cards Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredLabs.map((lab) => {
           const st = statusMap[lab.status];
           return (
@@ -326,6 +385,14 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
                   >
                     Detail & Aset
                   </button>
+                  <button
+                    onClick={() => handleStartComparison(lab.id)}
+                    className="px-2.5 py-1.5 font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                    title={`Bandingkan spesifikasi ${lab.name} secara side-by-side`}
+                  >
+                    <GitCompare className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Bandingkan</span>
+                  </button>
                   {permissions.canManageMasterLab && (
                     <button
                       onClick={() => handleDeleteLab(lab)}
@@ -365,6 +432,7 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
           );
         })}
       </div>
+      )}
 
       {/* Lab Detail & Inventory Inspection Modal */}
       {selectedLab && (
@@ -497,12 +565,26 @@ export const LaboratoriesView: React.FC<LaboratoriesViewProps> = ({
                   Data aset resmi BLSDM KOMDIGI SURABAYA
                 </div>
               )}
-              <button
-                onClick={() => setSelectedLab(null)}
-                className="px-4 py-2 font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer"
-              >
-                Tutup
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const target = selectedLab;
+                    setSelectedLab(null);
+                    handleStartComparison(target.id);
+                  }}
+                  className="px-3.5 py-2 font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-xs cursor-pointer flex items-center gap-1.5"
+                  title="Bandingkan spesifikasi laboratorium ini secara side-by-side dengan lab lain"
+                >
+                  <GitCompare className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Bandingkan Lab Ini</span>
+                </button>
+                <button
+                  onClick={() => setSelectedLab(null)}
+                  className="px-4 py-2 font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>

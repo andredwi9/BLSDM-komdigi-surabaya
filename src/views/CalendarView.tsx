@@ -30,6 +30,7 @@ import {
   getCalendarAccessToken
 } from '../services/googleCalendarService';
 import { User as FirebaseUser } from 'firebase/auth';
+import { ResourceTimelineView } from '../components/calendar/ResourceTimelineView';
 
 interface CalendarViewProps {
   onOpenBookingModal: (labId?: string, date?: string) => void;
@@ -44,7 +45,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const { labs, bookings, permissions, updateBookingCalendarSync } = useLab();
   const [selectedLabId, setSelectedLabId] = useState<string>('all');
-  const [calendarMode, setCalendarMode] = useState<'harian' | 'mingguan' | 'bulanan'>('bulanan');
+  const [calendarMode, setCalendarMode] = useState<'timeline' | 'bulanan'>('timeline');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedGCalEvent, setSelectedGCalEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -105,17 +106,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Month navigation
   const prevPeriod = () => {
     const next = new Date(currentDate);
-    if (calendarMode === 'bulanan') next.setMonth(next.getMonth() - 1);
-    else if (calendarMode === 'mingguan') next.setDate(next.getDate() - 7);
-    else next.setDate(next.getDate() - 1);
+    if (calendarMode === 'bulanan') {
+      next.setMonth(next.getMonth() - 1);
+    } else {
+      next.setDate(next.getDate() - 1);
+    }
     setCurrentDate(next);
   };
 
   const nextPeriod = () => {
     const next = new Date(currentDate);
-    if (calendarMode === 'bulanan') next.setMonth(next.getMonth() + 1);
-    else if (calendarMode === 'mingguan') next.setDate(next.getDate() + 7);
-    else next.setDate(next.getDate() + 1);
+    if (calendarMode === 'bulanan') {
+      next.setMonth(next.getMonth() + 1);
+    } else {
+      next.setDate(next.getDate() + 1);
+    }
     setCurrentDate(next);
   };
 
@@ -298,20 +303,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-slate-900">Kalender Terpadu Laboratorium</h1>
+            <h1 className="text-lg font-bold text-slate-900">Kalender & Timeline Terpadu Laboratorium</h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
               Satu Kalender Terpusat BLSDM KOMDIGI SURABAYA
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Mencegah bentrok jadwal antar unit dan sinkron dengan Google Calendar resmi atau pribadi.
+            Pantau penggunaan lab secara simultan, visualisasikan potensi bentrok jadwal secara real-time, dan sinkronkan dengan Google Calendar.
           </p>
         </div>
 
         {/* Right side navigation & actions */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Lab filter dropdown */}
-          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-300">
+          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs">
             <Building className="w-3.5 h-3.5 text-slate-500" />
             <select
               value={selectedLabId}
@@ -326,39 +331,46 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 font-medium">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 font-medium text-xs">
+            <button
+              onClick={() => setCalendarMode('timeline')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                calendarMode === 'timeline' 
+                  ? 'bg-blue-600 text-white shadow-xs font-bold' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Timeline Konkuren Multi-Laboratorium untuk identifikasi bentrok visual seketika"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Timeline Ruangan</span>
+            </button>
             <button
               onClick={() => setCalendarMode('bulanan')}
-              className={`px-3 py-1 rounded-md transition-colors ${calendarMode === 'bulanan' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                calendarMode === 'bulanan' 
+                  ? 'bg-white text-slate-900 shadow-xs font-bold' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              Bulanan
-            </button>
-            <button
-              onClick={() => setCalendarMode('mingguan')}
-              className={`px-3 py-1 rounded-md transition-colors ${calendarMode === 'mingguan' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600'}`}
-            >
-              Mingguan
-            </button>
-            <button
-              onClick={() => setCalendarMode('harian')}
-              className={`px-3 py-1 rounded-md transition-colors ${calendarMode === 'harian' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600'}`}
-            >
-              Harian
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>Kalender Bulanan</span>
             </button>
           </div>
 
-          {/* Navigation Month */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <button onClick={prevPeriod} className="p-1 hover:bg-white rounded transition-colors text-slate-700">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={setToday} className="px-2.5 py-1 hover:bg-white rounded font-medium text-slate-800 transition-colors">
-              Hari Ini
-            </button>
-            <button onClick={nextPeriod} className="p-1 hover:bg-white rounded transition-colors text-slate-700">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Navigation Month (Only if in bulanan mode) */}
+          {calendarMode === 'bulanan' && (
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+              <button onClick={prevPeriod} className="p-1 hover:bg-white rounded transition-colors text-slate-700 cursor-pointer">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button onClick={setToday} className="px-2.5 py-1 hover:bg-white rounded font-medium text-slate-800 transition-colors cursor-pointer">
+                Hari Ini
+              </button>
+              <button onClick={nextPeriod} className="p-1 hover:bg-white rounded transition-colors text-slate-700 cursor-pointer">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {permissions.canCreateBooking && onOpenSmartBooking && (
             <button
@@ -387,41 +399,57 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
 
-      {/* Month Title Indicator & Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-2 text-sm">
-        <h2 className="font-bold text-slate-800">
-          {monthNames[month]} {year}
-        </h2>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-            SIMLAB Booking
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-            Tersinkron Google Cal
-          </span>
-          {showGoogleEvents && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-              Google Calendar Pribadi
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Main Calendar View: Resource-Based Timeline OR Monthly Grid */}
+      {calendarMode === 'timeline' ? (
+        <ResourceTimelineView
+          labs={labs}
+          bookings={bookings}
+          currentDate={currentDate}
+          onDateChange={setCurrentDate}
+          selectedLabId={selectedLabId}
+          onSelectLabId={setSelectedLabId}
+          onOpenBookingModal={onOpenBookingModal}
+          onSelectBooking={setSelectedBooking}
+          onOpenSmartBooking={onOpenSmartBooking}
+          permissions={permissions}
+        />
+      ) : (
+        <>
+          {/* Month Title Indicator & Legend */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-2 text-sm">
+            <h2 className="font-bold text-slate-800">
+              {monthNames[month]} {year}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                SIMLAB Booking
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                Tersinkron Google Cal
+              </span>
+              {showGoogleEvents && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                  Google Calendar Pribadi
+                </span>
+              )}
+            </div>
+          </div>
 
-      {/* Calendar Grid */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Day Name Headers */}
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center font-bold text-slate-700 py-2.5 text-xs">
-          <span>Minggu</span>
-          <span>Senin</span>
-          <span>Selasa</span>
-          <span>Rabu</span>
-          <span>Kamis</span>
-          <span>Jumat</span>
-          <span>Sabtu</span>
-        </div>
+          {/* Calendar Grid */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            {/* Day Name Headers */}
+            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center font-bold text-slate-700 py-2.5 text-xs">
+              <span>Minggu</span>
+              <span>Senin</span>
+              <span>Selasa</span>
+              <span>Rabu</span>
+              <span>Kamis</span>
+              <span>Jumat</span>
+              <span>Sabtu</span>
+            </div>
 
         {/* Days grid */}
         <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 min-h-[580px]">
@@ -537,6 +565,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           })}
         </div>
       </div>
+        </>
+      )}
 
       {/* Selected Booking Popover / Detail Modal with Google Calendar Actions */}
       {selectedBooking && (
