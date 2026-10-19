@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-[11px] text-slate-400">SIMLAB SMART</span>
               </div>
               <div className="py-2 space-y-2 max-h-64 overflow-y-auto">
-                {pendingApprovals.length > 0 && (
+                {(permissions.canApproveBooking || permissions.canReviewBooking) && pendingApprovals.length > 0 && (
                   <div 
                     onClick={() => { setActiveView('booking'); setShowNotifications(false); }}
                     className="p-2 bg-amber-50 rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-100/70"
@@ -211,16 +211,23 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="text-slate-600 mt-0.5">Penanganan SLA darurat dibutuhkan untuk lab pemeliharaan.</p>
                   </div>
                 )}
-                <div 
-                  onClick={() => { setActiveView('insight'); setShowNotifications(false); }}
-                  className="p-2 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100/70"
-                >
-                  <div className="flex items-center gap-1.5 text-blue-800 font-semibold">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Rekomendasi AI Baru Siap</span>
+                {permissions.canAccessInsight && (
+                  <div 
+                    onClick={() => { setActiveView('insight'); setShowNotifications(false); }}
+                    className="p-2 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100/70"
+                  >
+                    <div className="flex items-center gap-1.5 text-blue-800 font-semibold">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Rekomendasi AI Baru Siap</span>
+                    </div>
+                    <p className="text-slate-600 mt-0.5">Analisis utilisasi dan prediksi lonjakan kebutuhan bulan ini.</p>
                   </div>
-                  <p className="text-slate-600 mt-0.5">Analisis utilisasi dan prediksi lonjakan kebutuhan bulan ini.</p>
-                </div>
+                )}
+                {!permissions.canAccessInsight && !(permissions.canApproveBooking || permissions.canReviewBooking) && criticalTickets.length === 0 && (
+                  <div className="p-3 text-center text-slate-400 text-xs">
+                    Tidak ada notifikasi baru untuk peran Anda.
+                  </div>
+                )}
               </div>
             </div>
           )}

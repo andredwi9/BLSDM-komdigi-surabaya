@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
   CalendarPlus, 
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useLab } from '../context/LabContext';
 import { UserRole } from '../types';
+import { getMenuDefinition } from '../utils/rbac';
+import { MenuAccessMatrixModal } from './modals/MenuAccessMatrixModal';
 
 interface SidebarProps {
   onOpenBookingModal?: () => void;
@@ -39,13 +41,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
     tickets 
   } = useLab();
 
+  const [isMatrixModalOpen, setIsMatrixModalOpen] = useState(false);
+  const [showRestrictedSection, setShowRestrictedSection] = useState(false);
+
   // Navigation menu items matching PRD exactly:
   // Dashboard, Booking Lab, Kalender, Laboratorium, Maintenance, Analytics, Insight, Laporan, Pengaturan
   const pendingApprovalsCount = bookings.filter(b => b.status === 'submitted' || b.status === 'reviewed').length;
   const activeTicketsCount = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  const allNavItems = [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: LayoutDashboard,
+      allowed: permissions.canAccessDashboard
+    },
     { 
       id: 'booking', 
       label: currentUser.role === 'pemohon' ? 'Booking Saya & Lab' : 'Booking Lab', 
@@ -53,27 +63,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: (currentUser.role === 'kasubag' || currentUser.role === 'admin' || currentUser.role === 'petugas') && pendingApprovalsCount > 0 
         ? pendingApprovalsCount 
         : undefined, 
-      badgeColor: 'bg-amber-500' 
+      badgeColor: 'bg-amber-500',
+      allowed: permissions.canAccessBooking
     },
-    { id: 'calendar', label: 'Kalender', icon: Calendar },
-    { id: 'laboratories', label: 'Laboratorium', icon: MonitorCheck },
+    { 
+      id: 'calendar', 
+      label: 'Kalender', 
+      icon: Calendar,
+      allowed: permissions.canAccessCalendar
+    },
+    { 
+      id: 'laboratories', 
+      label: 'Laboratorium', 
+      icon: MonitorCheck,
+      allowed: permissions.canAccessLaboratories
+    },
     { 
       id: 'maintenance', 
-      label: 'Maintenance', 
+      label: currentUser.role === 'pemohon' ? 'Lapor Kerusakan' : 'Maintenance', 
       icon: Wrench, 
-      badge: activeTicketsCount > 0 ? activeTicketsCount : undefined, 
-      badgeColor: 'bg-rose-500' 
+      badge: currentUser.role !== 'pemohon' && activeTicketsCount > 0 ? activeTicketsCount : undefined, 
+      badgeColor: 'bg-rose-500',
+      allowed: permissions.canAccessMaintenance
     },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'insight', label: 'Insight AI', icon: Sparkles, highlight: true },
-    { id: 'reports', label: 'Laporan', icon: FileText },
+    { 
+      id: 'analytics', 
+      label: 'Analytics', 
+      icon: BarChart3,
+      allowed: permissions.canAccessAnalytics
+    },
+    { 
+      id: 'insight', 
+      label: 'Insight AI', 
+      icon: Sparkles, 
+      highlight: true,
+      allowed: permissions.canAccessInsight
+    },
+    { 
+      id: 'reports', 
+      label: 'Laporan', 
+      icon: FileText,
+      allowed: permissions.canAccessReports
+    },
     { 
       id: 'settings', 
       label: 'Pengaturan', 
       icon: Settings,
-      restricted: currentUser.role !== 'admin'
+      allowed: permissions.canAccessSettings
     },
   ];
+
+  const allowedNavItems = allNavItems.filter(item => item.allowed);
+  const restrictedNavItems = allNavItems.filter(item => !item.allowed);
 
   const roleOptions: { role: UserRole; title: string; subtitle: string }[] = [
     { role: 'kasubag', title: 'Kasubag Sarpras / TU', subtitle: 'Persetujuan & Kebijakan' },
@@ -90,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-3">
           {/* Logo Crest SVG */}
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-sky-700 flex items-center justify-center text-white shadow-md shadow-blue-900/40 shrink-0">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-6 h-6" viewBox="0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
@@ -118,21 +159,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Nav Menu Links */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
         <div className="px-3 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>Menu Utama</span>
+          <span>Menu Utama ({allowedNavItems.length})</span>
           {permissions.isReadOnly && (
             <span className="text-[9px] text-amber-400 bg-amber-950/70 border border-amber-800/40 px-1 rounded">
               Read-Only
             </span>
           )}
         </div>
-        {navItems.map((item) => {
+
+        {/* Allowed Navigation Items */}
+        {allowedNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveView(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 isActive
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
@@ -153,15 +196,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     AI
                   </span>
                 )}
-                {item.restricted && !isActive && (
-                  <span title="Akses Dikelola Administrator">
-                    <Lock className="w-3 h-3 text-slate-500" />
-                  </span>
-                )}
               </div>
             </button>
           );
         })}
+
+        {/* Restricted Navigation Items Section */}
+        {restrictedNavItems.length > 0 && (
+          <div className="pt-3 mt-2 border-t border-slate-800/60">
+            <div className="px-3 pb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Lock className="w-3 h-3 text-slate-500" />
+                <span>Menu Dibatasi ({restrictedNavItems.length})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRestrictedSection(!showRestrictedSection)}
+                className="text-[9px] text-sky-400 hover:text-sky-300 font-mono underline cursor-pointer"
+              >
+                {showRestrictedSection ? 'Sembunyikan' : 'Lihat'}
+              </button>
+            </div>
+
+            {showRestrictedSection && (
+              <div className="space-y-1 mt-1 bg-slate-900/40 p-1.5 rounded-xl border border-slate-800/70 animate-in fade-in">
+                {restrictedNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.id;
+                  const menuDef = getMenuDefinition(item.id);
+                  const allowedList = menuDef?.allowedRoles.map(r => r === 'admin' ? 'Admin' : r === 'kasubag' ? 'Kasubag' : r === 'petugas' ? 'Petugas' : r === 'pimpinan' ? 'Pimpinan' : 'Pemohon').join(', ');
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveView(item.id)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-rose-950/80 text-rose-200 border border-rose-800/60'
+                          : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
+                      }`}
+                      title={`Menu "${item.label}" terkunci untuk peran Anda. Memerlukan: ${allowedList}. Klik untuk rincian kebijakan.`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Icon className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                        <span className="truncate opacity-75">{item.label}</span>
+                      </div>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 shrink-0">
+                        <Lock className="w-2.5 h-2.5 text-slate-400" />
+                        <span>Terkunci</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Quick Action: Smart Booking */}
@@ -227,6 +317,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
+        {/* Button to Open RBAC Matrix */}
+        <button
+          type="button"
+          onClick={() => setIsMatrixModalOpen(true)}
+          className="w-full py-1.5 px-2 rounded-lg border border-slate-700/80 bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-sky-300 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <Shield className="w-3.5 h-3.5 text-sky-400" />
+          <span>Matriks Hak Akses (RBAC)</span>
+        </button>
+
         {/* Current User Card */}
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/40 border border-slate-800">
           <div className="w-8 h-8 rounded-full bg-blue-700/60 border border-blue-500/40 flex items-center justify-center text-xs font-semibold text-white shrink-0">
@@ -251,6 +351,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Keluar (Logout)</span>
         </button>
       </div>
+
+      {/* RBAC Matrix Modal */}
+      <MenuAccessMatrixModal
+        isOpen={isMatrixModalOpen}
+        onClose={() => setIsMatrixModalOpen(false)}
+        currentRole={currentUser.role}
+      />
     </aside>
   );
 };

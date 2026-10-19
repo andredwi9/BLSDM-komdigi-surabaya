@@ -243,6 +243,11 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       details: `ASN ${found.name} (${found.role.toUpperCase()}) berhasil masuk ke sesi SIMLAB SMART.`,
     }, ...prev]);
 
+    const allowed = getRolePermissions(found.role).allowedMenus || [];
+    if (!allowed.includes(activeView)) {
+      setActiveView('dashboard');
+    }
+
     return { 
       success: true, 
       message: `Selamat datang kembali, ${found.name}!`, 
@@ -286,6 +291,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(true);
     localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, 'pemohon');
     localStorage.setItem(`${STORAGE_KEY_PREFIX}is_auth`, 'true');
+    setActiveView('dashboard');
 
     addAuditLogEntry('REGISTRASI AKUN BARU', 'User', newUser.id, `Pendaftaran akun Pemohon baru atas nama ${newUser.name} (${newUser.email}).`);
 
@@ -335,6 +341,7 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthenticated(true);
       localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, 'pemohon');
       localStorage.setItem(`${STORAGE_KEY_PREFIX}is_auth`, 'true');
+      setActiveView('dashboard');
 
       addAuditLogEntry('LOGIN GOOGLE (PEMOHON)', 'User', targetUser.id, `Masuk dengan akun Google (${targetUser.email}) khusus Akun Pemohon.`);
 
@@ -449,6 +456,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(found);
       localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, found.role);
       addAuditLogEntry('USER SWITCH', 'User', found.id, `Beralih ke akun ${found.name} (${found.role.toUpperCase()})`);
+      const allowed = getRolePermissions(found.role).allowedMenus || [];
+      if (!allowed.includes(activeView)) {
+        setActiveView('dashboard');
+      }
     }
   };
 
@@ -462,6 +473,10 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(found);
       localStorage.setItem(`${STORAGE_KEY_PREFIX}user_role`, role);
       addAuditLogEntry('ROLE SWITCH', 'User', found.id, `Beralih ke peran ${found.role.toUpperCase()} (${found.name})`);
+      const allowed = getRolePermissions(role).allowedMenus || [];
+      if (!allowed.includes(activeView)) {
+        setActiveView('dashboard');
+      }
     }
   };
 

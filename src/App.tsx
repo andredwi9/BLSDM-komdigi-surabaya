@@ -21,9 +21,11 @@ import { ReportDamageModal } from './components/modals/ReportDamageModal';
 import { InspectionModal } from './components/modals/InspectionModal';
 import { KPICustomizerModal } from './components/modals/KPICustomizerModal';
 import { LoginView } from './views/LoginView';
+import { AccessDeniedView } from './components/common/AccessDeniedView';
+import { isMenuAllowedForRole } from './utils/rbac';
 
 const AppContent: React.FC = () => {
-  const { activeView, isAuthenticated } = useLab();
+  const { activeView, isAuthenticated, currentUser } = useLab();
 
   // Modal states
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -110,55 +112,61 @@ const AppContent: React.FC = () => {
           onOpenSmartBooking={handleOpenSmartBooking}
         />
 
-        {/* Viewport Content */}
+        {/* Viewport Content with Menu RBAC Protection */}
         <main className="flex-1 overflow-y-auto">
-          {activeView === 'dashboard' && (
-            <DashboardView
-              onOpenBookingModal={handleOpenBooking}
-              onOpenQRModal={handleOpenQR}
-              onOpenDamageModal={handleOpenDamage}
-              onOpenSmartBooking={handleOpenSmartBooking}
-            />
+          {!isMenuAllowedForRole(currentUser.role, activeView) ? (
+            <AccessDeniedView attemptedView={activeView} />
+          ) : (
+            <>
+              {activeView === 'dashboard' && (
+                <DashboardView
+                  onOpenBookingModal={handleOpenBooking}
+                  onOpenQRModal={handleOpenQR}
+                  onOpenDamageModal={handleOpenDamage}
+                  onOpenSmartBooking={handleOpenSmartBooking}
+                />
+              )}
+
+              {activeView === 'booking' && (
+                <BookingView
+                  onOpenBookingModal={handleOpenBooking}
+                  onOpenQRModal={handleOpenQR}
+                  onOpenSmartBooking={handleOpenSmartBooking}
+                />
+              )}
+
+              {activeView === 'calendar' && (
+                <CalendarView
+                  onOpenBookingModal={handleOpenBooking}
+                  onOpenQRModal={handleOpenQR}
+                  onOpenSmartBooking={handleOpenSmartBooking}
+                />
+              )}
+
+              {activeView === 'laboratories' && (
+                <LaboratoriesView
+                  onOpenBookingModal={handleOpenBooking}
+                  onOpenDamageModal={handleOpenDamage}
+                />
+              )}
+
+              {activeView === 'maintenance' && (
+                <MaintenanceView
+                  onOpenDamageModal={handleOpenDamage}
+                />
+              )}
+
+              {activeView === 'analytics' && <AnalyticsView />}
+
+              {activeView === 'insight' && (
+                <InsightView onOpenBookingModal={handleOpenBooking} />
+              )}
+
+              {activeView === 'reports' && <ReportsView />}
+
+              {activeView === 'settings' && <SettingsView />}
+            </>
           )}
-
-          {activeView === 'booking' && (
-            <BookingView
-              onOpenBookingModal={handleOpenBooking}
-              onOpenQRModal={handleOpenQR}
-              onOpenSmartBooking={handleOpenSmartBooking}
-            />
-          )}
-
-          {activeView === 'calendar' && (
-            <CalendarView
-              onOpenBookingModal={handleOpenBooking}
-              onOpenQRModal={handleOpenQR}
-              onOpenSmartBooking={handleOpenSmartBooking}
-            />
-          )}
-
-          {activeView === 'laboratories' && (
-            <LaboratoriesView
-              onOpenBookingModal={handleOpenBooking}
-              onOpenDamageModal={handleOpenDamage}
-            />
-          )}
-
-          {activeView === 'maintenance' && (
-            <MaintenanceView
-              onOpenDamageModal={handleOpenDamage}
-            />
-          )}
-
-          {activeView === 'analytics' && <AnalyticsView />}
-
-          {activeView === 'insight' && (
-            <InsightView onOpenBookingModal={handleOpenBooking} />
-          )}
-
-          {activeView === 'reports' && <ReportsView />}
-
-          {activeView === 'settings' && <SettingsView />}
         </main>
       </div>
 
